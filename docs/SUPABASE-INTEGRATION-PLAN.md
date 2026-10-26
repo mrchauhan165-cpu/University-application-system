@@ -1,6 +1,8 @@
 # Supabase integration — audit and implementation plan
 
-Status: **audit complete, no application code changed.**
+Status: **audit complete; connection layer shipped (see §9).**
+Reads and writes still come from the browser store — the portal is unchanged
+except for a new "Cloud connection" check in Administration → Settings.
 Scope of this document: what exists today, what is demo-only, which files must
 change, and the order in which to connect a real Supabase project without
 touching the UI.
@@ -222,3 +224,26 @@ shared backend interface, `SupabaseBackend` for auth + read model, env injection
 in `deploy.yml`, and adapter tests with a mocked client. The UI does not change,
 the demo build keeps working without env variables, and the live site only
 switches over once the Variables exist.
+
+---
+
+## 9. Shipped so far (connection layer)
+
+| Item | Where |
+| --- | --- |
+| Publishable env contract + validation, refusal of privileged keys | `src/backend/supabase/client.ts` |
+| Health probe (auth → REST → `permissions` catalogue), masked project host | `probeCloud()` / `probeCurrentBuild()` |
+| "Cloud connection" card with a **Test cloud connection** button | `src/ui/pages/admin/SettingsTab.tsx` |
+| Build variables injected into the Pages build | `.github/workflows/deploy.yml` |
+| Tests (10 unit + 1 render) | `src/backend/__tests__/supabase-client.test.ts`, `src/ui/__tests__/render.test.tsx` |
+
+What the probe proves, without reading any personal data:
+
+1. the URL is a real Supabase project (Auth health);
+2. the publishable key is accepted by REST;
+3. the SQL migrations ran (`permissions` answers, or is protected by RLS — both
+   count as applied).
+
+Still to do before the portal talks to the database: the adapter (Phase 2) and
+the write RPCs (Phase 3). Until then every screen keeps reading from the browser
+store, so nothing can be lost or half-written.

@@ -181,3 +181,13 @@ describe('approve-only posts and the free-text request', () => {
     expect(document.body.textContent).toContain('Add a teacher');
   });
 });
+
+describe('cloud connection status', () => {
+  it('tells an administrator honestly that this build has no Supabase variables', async () => {
+    await openAt('sysadmin@demo.university', '#/admin/settings');
+    await waitFor(() => expect(document.body.textContent).toContain('Cloud connection'));
+    expect(document.body.textContent).toMatch(/Not present/i);
+    expect(document.body.textContent).toMatch(/Test cloud connection/);
+    expect(document.body.textContent).toMatch(/keeps working from browser storage|Still local in this build/i);
+  });
+});

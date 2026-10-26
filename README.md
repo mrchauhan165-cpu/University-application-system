@@ -245,7 +245,13 @@ rewrites or SPA fallbacks are required** and deep links survive a refresh.
 4. Port the operations in `src/backend/ops/` to `security definer` RPCs, keeping
    the same input/output shapes (`OpContext`, `ApiError` codes).
 5. Point the frontend at the project with `VITE_SUPABASE_URL` and
-   `VITE_SUPABASE_ANON_KEY` (see `.env.example`) — publishable values only.
+   `VITE_SUPABASE_ANON_KEY` (see `.env.example`) — publishable values only. On
+   GitHub Pages these come from **Settings → Secrets and variables → Actions →
+   Variables**; the deploy workflow passes them to the build.
+6. Sign in as the system administrator and open **Administration → Settings →
+   Cloud connection → Test cloud connection**. It checks the URL, the key and
+   whether the migrations ran, without reading any personal data. The data layer
+   still runs on browser storage until the adapter ships.
 
 Step-by-step instructions written for a non-developer are in
 [`docs/HANDOVER.md`](docs/HANDOVER.md).

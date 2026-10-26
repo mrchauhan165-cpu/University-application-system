@@ -79,6 +79,11 @@ jobs:
           # Pages' own base path when available, otherwise the project-site
           # default. BASE_PATH (repository variable) always wins.
           VITE_BASE_PATH: ${{ vars.BASE_PATH || (steps.pages.outputs.base_path != '' && format('{0}/', steps.pages.outputs.base_path)) || format('/{0}/', github.event.repository.name) }}
+          # Publishable values only. Set them once under
+          # Settings -> Secrets and variables -> Actions -> Variables
+          # (or as Secrets; both work). Never add a service-role key here.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL || secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY || secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
 
       - name: Make sure no source maps or secrets ship
