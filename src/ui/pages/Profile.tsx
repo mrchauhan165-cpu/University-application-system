@@ -43,6 +43,12 @@ export function ProfilePage() {
     .sort((a, b) => (a.starts_at < b.starts_at ? 1 : -1));
 
   const activeGrants = current.grants;
+  const mentorAssignment = data.assignments.find(
+    (a) => a.active && a.post_code === 'MENTOR' && a.scope.section_id === profile.section_id,
+  );
+  const mentorName = mentorAssignment
+    ? data.profiles.find((p) => p.id === mentorAssignment.user_id)?.full_name ?? null
+    : null;
 
   async function changePassword(e: React.FormEvent) {
     e.preventDefault();
@@ -129,19 +135,7 @@ export function ProfilePage() {
                         { label: 'Batch', value: batch?.label ?? '—' },
                         { label: 'Section', value: section?.name ?? '—' },
                         { label: 'Roll number', value: profile.roll_no ?? '—' },
-                        {
-                          label: 'Current mentor',
-                          value:
-                            data.assignments.find((a) => a.active && a.post_code === 'MENTOR' && a.scope.section_id === profile.section_id)
-                              ? data.profiles.find(
-                                  (p) =>
-                                    p.id ===
-                                    data.assignments.find(
-                                      (a) => a.active && a.post_code === 'MENTOR' && a.scope.section_id === profile.section_id,
-                                    )?.user_id,
-                                )?.full_name ?? '—'
-                              : 'Not assigned',
-                        },
+                        ...(mentorName ? [{ label: 'Current mentor', value: mentorName }] : []),
                       ]
                     : [
                         { label: 'Department', value: dept?.name ?? '—' },
