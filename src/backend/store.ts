@@ -30,12 +30,30 @@ export interface Persistence {
 const STORAGE_KEY = 'uas.v1.state';
 const MAX_BYTES = 4_200_000;
 
+/**
+ * Reading `window.localStorage` can *throw* (cross-origin iframes, private
+ * modes, storage disabled by policy). Probe it inside a try/catch so the portal
+ * degrades to in-memory data instead of failing to boot.
+ */
+export function browserStorageWorks(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const probe = '__uas_probe__';
+    window.localStorage.setItem(probe, '1');
+    window.localStorage.removeItem(probe);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export class LocalPersistence implements Persistence {
   key = STORAGE_KEY;
-  private available: boolean;
+  /** false when the browser blocks storage — the app still runs, in memory. */
+  readonly available: boolean;
 
   constructor() {
-    this.available = typeof window !== 'undefined' && Boolean(window.localStorage);
+    this.available = browserStorageWorks();
   }
 
   load(): PersistedState | null {

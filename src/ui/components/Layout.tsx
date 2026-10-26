@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Permission } from '../../domain/types';
 import { Icon } from './Icons';
 import { useApp, navigate } from '../context';
+import { Alert } from './UI';
 import { fromNow } from '../lib/format';
 import { initialLetters } from '../lib/format';
 
@@ -280,6 +281,15 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main id="main" className="page" tabIndex={-1}>
+          {backend.storageMode === 'memory' ? (
+            <div className="mb">
+              <Alert tone="warn" title="Preview mode — data is not saved.">
+                This browser is blocking local storage (common inside an embedded preview or private
+                window), so everything you change lives in memory and resets on reload. The demo works
+                normally; open the published site for saving to work.
+              </Alert>
+            </div>
+          ) : null}
           {children}
         </main>
         <footer style={{ padding: '18px 24px', color: 'var(--muted)', fontSize: '0.76rem', borderTop: '1px solid var(--line)', background: '#fff' }}>

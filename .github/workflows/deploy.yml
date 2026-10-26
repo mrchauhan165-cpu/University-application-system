@@ -40,6 +40,7 @@ jobs:
 
       - name: Run tests
         run: npm test
+        # UI tests run in jsdom, so no browser download is needed in CI.
 
       - name: Build static site
         # Project pages live under /<repo>/ — for a user site or custom domain

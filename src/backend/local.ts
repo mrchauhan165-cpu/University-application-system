@@ -215,6 +215,14 @@ export class LocalBackend {
     return this.version;
   }
 
+  /**
+   * 'browser' when changes survive a reload, 'memory' when this browser blocks
+   * storage (embedded previews, private mode). The UI warns in the latter case.
+   */
+  get storageMode(): 'browser' | 'memory' {
+    return this.persistence instanceof LocalPersistence && this.persistence.available ? 'browser' : 'memory';
+  }
+
   subscribe(listener: Listener): () => void {
     this.listeners.add(listener);
     return () => {

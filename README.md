@@ -7,7 +7,7 @@ hosted on GitHub Pages, Netlify, S3, nginx, or any other static host.
 
 > **Honest status.** This repository contains a complete, working **prototype**
 > with a browser-side service layer. Every rule described below is enforced in
-> `src/backend` and is covered by automated tests (111 of them at the time of
+> `src/backend` and is covered by automated tests (114 of them at the time of
 > writing). It is **not yet connected to a real database, email service or file
 > store**; see [What is not production-ready](#what-is-not-production-ready).
 > All data in the demo is fictional and labelled as such in the interface.
@@ -19,9 +19,14 @@ hosted on GitHub Pages, Netlify, S3, nginx, or any other static host.
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # 111 tests: authorisation, workflow, notices, retention, UI
+npm test           # 114 tests: authorisation, workflow, notices, retention, UI
 npm run build      # typecheck + static build into dist/
+npm run preview:dist   # serve the built site on :5173, exactly as a host would
 ```
+
+> Previews inside an embedded iframe can have browser storage blocked. The portal
+> detects that, keeps working from memory and shows a small "data is not saved"
+> notice instead of failing to load.
 
 Sign in with any demo account below. The password for every demo account is
 `Demo@12345` (shown on the sign-in screen; it is demo data, not a credential).

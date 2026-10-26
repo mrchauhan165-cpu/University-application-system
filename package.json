@@ -10,7 +10,8 @@
     "preview": "vite preview --host 0.0.0.0",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "preview:dist": "node scripts/serve-preview.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

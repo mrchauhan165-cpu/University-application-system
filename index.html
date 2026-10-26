@@ -28,5 +28,20 @@
       <div class="boot"><div class="boot-inner"><div class="boot-dot"></div><p>Loading portal…</p></div></div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // If the bundle never boots (blocked script, stale build), do not leave the
+      // visitor staring at a spinner — tell them what to try.
+      setTimeout(function () {
+        var boot = document.querySelector('.boot');
+        if (!boot) return;
+        boot.innerHTML =
+          '<div class="boot-inner"><p><strong>The portal did not finish loading.</strong></p>' +
+          '<p style="font-size:13px;color:#465a75;max-width:32ch;margin:8px auto 0">' +
+          'Reload the page. If it keeps happening, open this link in a normal browser tab ' +
+          '(not an embedded preview) and allow storage for the site.</p>' +
+          '<p><button onclick="location.reload()" style="margin-top:10px;padding:8px 14px;border-radius:8px;border:0;' +
+          'background:#1e56a0;color:#fff;font:inherit;cursor:pointer">Reload</button></p></div>';
+      }, 9000);
+    </script>
   </body>
 </html>

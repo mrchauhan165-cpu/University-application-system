@@ -34,6 +34,13 @@ Try these four minutes of demonstration:
 
 To stop the server press `Ctrl + C`.
 
+**Previewing a built copy** (this is what a real host serves):
+
+```bash
+npm run build
+npm run preview:dist      # http://localhost:5173
+```
+
 > The demo stores its data inside the browser you are using. It is not shared
 > between devices, and clearing your browser data resets it.
 
