@@ -68,6 +68,13 @@ const ALL_OFFICER_PERMS: Permission[] = [
   'notice.create',
 ];
 
+/**
+ * Dean level and above may approve but never apply: senior posts deliberately
+ * drop `application.submit`. An administrator can add it back per post in
+ * Administration → Posts & permissions.
+ */
+const SENIOR_PERMS: Permission[] = ALL_OFFICER_PERMS.filter((p) => p !== 'application.submit');
+
 function posts(): Post[] {
   const mk = (
     code: string,
@@ -81,17 +88,17 @@ function posts(): Post[] {
   return [
     mk('MENTOR', 'Mentor', 'section', 10, ALL_OFFICER_PERMS, 'Class mentor for an assigned section.'),
     mk('HOD', 'Head of Department', 'department', 20, ALL_OFFICER_PERMS, 'Head of an assigned department.'),
-    mk('DEAN', 'Dean', 'faculty', 30, ALL_OFFICER_PERMS, 'Dean of an assigned faculty.'),
-    mk('REGISTRAR', 'Registrar', 'university', 40, ALL_OFFICER_PERMS, 'University registrar.'),
+    mk('DEAN', 'Dean', 'faculty', 30, SENIOR_PERMS, 'Dean of an assigned faculty. Approves but never applies.'),
+    mk('REGISTRAR', 'Registrar', 'university', 40, SENIOR_PERMS, 'University registrar. Approves but never applies.'),
     mk('HR_OFFICER', 'HR Officer', 'university', 25, ALL_OFFICER_PERMS, 'Processes staff claims and HR requests.'),
-    mk('PVC', 'Pro-Vice-Chancellor', 'university', 50, ALL_OFFICER_PERMS, 'Pro-Vice-Chancellor.'),
+    mk('PVC', 'Pro-Vice-Chancellor', 'university', 50, SENIOR_PERMS, 'Pro-Vice-Chancellor. Approves but never applies.'),
     mk(
       'VC',
       'Vice-Chancellor',
       'university',
       60,
-      [...ALL_OFFICER_PERMS, 'notice.university', 'audit.view'],
-      'Vice-Chancellor — final university authority unless a post above is configured.',
+      [...SENIOR_PERMS, 'notice.university', 'audit.view'],
+      'Vice-Chancellor — final university authority unless a post above is configured. Approves but never applies.',
     ),
     mk(
       'CHANCELLOR',
@@ -99,7 +106,6 @@ function posts(): Post[] {
       'university',
       70,
       [
-        'application.submit',
         'application.view',
         'application.act',
         'document.view',
@@ -108,7 +114,7 @@ function posts(): Post[] {
         'notice.university',
         'audit.view',
       ],
-      'Custom post above the VC (demonstrates configurable higher authority).',
+      'Custom post above the VC (demonstrates configurable higher authority). Approves but never applies.',
     ),
     mk(
       'WORKFLOW_ADMIN',
@@ -587,6 +593,41 @@ function applicationTypes(): ApplicationType[] {
       ],
     }),
     mk({
+      id: 'at_other',
+      code: 'OTHER_REQUEST',
+      name: 'Other request (write your own subject)',
+      description:
+        'Anything not covered by the standard forms. Write your own subject and explain what you need — students go to the mentor, staff to the head of department.',
+      applicant_kinds: ['student', 'teacher', 'staff'],
+      confidential: false,
+      allow_draft: true,
+      allow_withdraw: true,
+      retention_category: 'standard',
+      extra_viewer_posts: [],
+      fallback_approver_post: 'DEAN',
+      fields: [
+        {
+          key: 'subject',
+          label: 'Subject',
+          type: 'text',
+          required: true,
+          max_length: 160,
+          help: 'Write the subject in your own words — anything is fine.',
+        },
+        { key: 'details', label: 'Describe your request', type: 'textarea', required: true, max_length: 4000 },
+        { key: 'needed_by', label: 'Needed by (optional)', type: 'date', required: false },
+      ],
+      documents: [
+        {
+          key: 'supporting',
+          label: 'Supporting document (optional)',
+          required: false,
+          accept: ['application/pdf', 'image/png', 'image/jpeg'],
+          max_mb: 2,
+        },
+      ],
+    }),
+    mk({
       id: 'at_grievance',
       code: 'EXAM_GRIEVANCE',
       name: 'Examination grievance (confidential)',
@@ -642,6 +683,12 @@ function workflows(): WorkflowVersion[] {
       { key: 'hod', post_code: 'HOD', label: 'Head of Department' },
     ]),
     mk('wf_bonafide', 'at_bonafide', [{ key: 'mentor', post_code: 'MENTOR', label: 'Mentor review' }]),
+    // Students: mentor → HOD. Staff applications have no section, so the mentor
+    // stage is not applicable and is skipped automatically (see workflow.ts).
+    mk('wf_other', 'at_other', [
+      { key: 'mentor', post_code: 'MENTOR', label: 'Mentor review', optional: true },
+      { key: 'hod', post_code: 'HOD', label: 'Head of Department' },
+    ]),
     mk(
       'wf_faculty_leave',
       'at_faculty_leave',

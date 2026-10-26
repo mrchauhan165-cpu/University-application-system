@@ -42,7 +42,11 @@ export function DashboardPage() {
   const history = historyForSession(data, session);
   const isOfficer = session.permissions.includes('application.view');
   const isAdmin = session.permissions.includes('user.manage') || session.permissions.includes('system.admin');
-  const availableTypes = data.applicationTypes.filter((t) => t.active && t.applicant_kinds.includes(profile.kind));
+  // Dean level and above approve but never apply, so the "start" affordances
+  // disappear for them (the backend refuses anyway — this keeps the UI honest).
+  const availableTypes = session.canSubmit
+    ? data.applicationTypes.filter((t) => t.active && t.applicant_kinds.includes(profile.kind))
+    : [];
   const recentNotices = data.notices
     .filter((n) => n.status === 'published')
     .sort((a, b) => ((a.publish_at ?? '') < (b.publish_at ?? '') ? 1 : -1))

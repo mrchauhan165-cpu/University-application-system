@@ -12,6 +12,18 @@ const FAQ = [
     a: 'You always see your own applications. Officers see an application only while it is at their stage, or after it has passed through their post — and only within the post’s organisational scope. Former post holders lose access immediately when their assignment ends.',
   },
   {
+    q: 'Can a Dean, Registrar, PVC, VC or Chancellor file their own application?',
+    a: 'No. Dean level and above approve applications but never raise them — the rule is enforced by the server, so hiding the button is not the only protection. An administrator can still grant “submit application” to a specific post under Administration → Posts & permissions if a university ever wants that, and the interface follows the setting immediately.',
+  },
+  {
+    q: 'How do I write a request that has no standard form?',
+    a: 'Choose “Other request (write your own subject)” when you start an application. You write the subject and the details in your own words, and may attach one supporting document. A student’s request goes to the mentor and then the head of department; a teacher or staff member has no section, so it goes straight to the head of department.',
+  },
+  {
+    q: 'How do I add a teacher to a department, or move one?',
+    a: 'Administration → Organisation → Departments has a Teachers column. “Add” creates a teacher account directly in that department and gives you the activation link; the number opens the list of everyone in the department with a “Change department” action. A move updates the profile, queue and notices at once and is written to the audit trail. If the person still holds a post in the old department the move is refused — hand the post over first, otherwise they would keep an old queue.',
+  },
+  {
     q: 'Why can’t I approve my own application?',
     a: 'Self-approval is blocked by the backend. If a department head applies for leave, the workflow skips their own stage and routes the application to the next configured independent authority.',
   },
@@ -75,6 +87,9 @@ export function HelpPage() {
                   <li>Configurable faculties, departments, batches, sections, posts and assignments</li>
                   <li>Application drafting, submission, correction, withdrawal and document upload</li>
                   <li>Approval routing, VC approve-and-forward, self-approval blocking, workflow versioning</li>
+                  <li>Approve-only senior posts: Dean level and above cannot raise applications (server-enforced)</li>
+                  <li>Free-text “Other request” applications with an optional supporting document</li>
+                  <li>Teachers added per department and moved between departments, guarded by live posts</li>
                   <li>Post-based history, permission-filtered documents and notifications</li>
                   <li>Scoped notices with read receipts, and scope-limited statistics with CSV export</li>
                   <li>Retention dry runs, second-approver gates, legal holds and deletion audit</li>

@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
-import { render, waitFor, cleanup } from '@testing-library/react';
+import { render, waitFor, cleanup, fireEvent } from '@testing-library/react';
 import { App } from '../../App';
 import { DEMO_PASSWORD } from '../../backend/seed';
 import { makeBackend } from '../../backend/__tests__/helpers';
@@ -138,5 +138,46 @@ describe('administration console renders every permitted tab', () => {
   it('blocks a student from the console', async () => {
     await openAt('student.a@demo.university', '#/admin/users');
     await waitFor(() => expect(document.body.textContent).toMatch(/do not have (access|administrative)/i));
+  });
+});
+
+describe('approve-only posts and the free-text request', () => {
+  it('a Dean sees no “start an application” affordance', async () => {
+    await openAt('dean.eng@demo.university', '#/applications');
+    await waitFor(() => expect(document.body.textContent).toContain('My applications'));
+    expect(document.body.textContent).not.toMatch(/New application/i);
+    expect(document.body.textContent).toMatch(/approves applications but never raises them/i);
+  });
+
+  it('a Dean opening the new-application page is told why, with a way out', async () => {
+    await openAt('dean.eng@demo.university', '#/applications/new');
+    await waitFor(() => expect(document.body.textContent).toMatch(/approves, it does not apply/i));
+    expect(document.body.textContent).toMatch(/Go to my inbox/);
+  });
+
+  it('a student can pick the free-text “Other request” type', async () => {
+    await openAt('student.a@demo.university', '#/applications/new');
+    await waitFor(() => expect(document.body.textContent).toMatch(/Other request/i));
+  });
+
+  it('the “Other request” form asks for a subject and details', async () => {
+    await openAt('student.a@demo.university', '#/applications/new?type=at_other');
+    await waitFor(() => expect(document.body.textContent).toContain('Subject'));
+    expect(document.body.textContent).toMatch(/Describe your request/i);
+    expect(document.body.textContent).toMatch(/Supporting document/i);
+  });
+
+  it('Administration → Departments shows a teacher column with add and move actions', async () => {
+    await openAt('sysadmin@demo.university', '#/admin/structure');
+    await waitFor(() => expect(document.body.textContent).toContain('Teachers'));
+    expect(document.body.textContent).toMatch(/\d+ teachers/);
+    expect(document.body.textContent).toContain('No teachers yet');
+    const chip = document.querySelector('.teacher-chip') as HTMLElement;
+    expect(chip).toBeTruthy();
+
+    // opening the teacher list for a department reveals the move action
+    fireEvent.click(chip);
+    await waitFor(() => expect(document.body.textContent).toContain('Change department'));
+    expect(document.body.textContent).toContain('Add a teacher');
   });
 });

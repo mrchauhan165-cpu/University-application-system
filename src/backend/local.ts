@@ -45,6 +45,7 @@ import {
 import {
   archiveDepartment,
   archiveFaculty,
+  changeUserDepartment,
   endAssignment,
   migrateApplicationsOfType,
   migrateApplicationsToWorkflow,
@@ -680,6 +681,10 @@ export class LocalBackend {
   }
   setUserStatus(id: string, status: Profile['status']) {
     return this.mutate((ctx) => setUserStatus(ctx, id, status));
+  }
+  /** Move a teacher/staff member to another department, guarding live posts. */
+  changeUserDepartment(input: { user_id: string; department_id: string; reason?: string | null }): Profile {
+    return this.mutate((ctx) => changeUserDepartment(ctx, input));
   }
   saveAssignment(input: { user_id: string; post_code: string; scope: Scope; starts_at?: string; reason?: string }): Assignment {
     return this.mutate((ctx) => saveAssignment(ctx, input));

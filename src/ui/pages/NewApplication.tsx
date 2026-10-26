@@ -23,6 +23,33 @@ export function NewApplicationPage() {
 
   const selected = typeById(data, typeId);
 
+  if (!session.canSubmit) {
+    return (
+      <>
+        <PageHeader
+          title="Your post approves, it does not apply"
+          subtitle="Dean-level posts and above only take decisions on applications raised by students and staff."
+          breadcrumbs={[{ label: 'My applications', to: '/applications' }, { label: 'New application' }]}
+        />
+        <Card>
+          <div className="card-pad">
+            <Alert tone="info" title="Only students, teachers, mentors and heads can raise an application.">
+              This is enforced by the server, not just hidden here. If you genuinely need to apply, ask your
+              administrator to add the “submit application” permission to your post in
+              <strong> Administration → Posts &amp; permissions</strong>.
+            </Alert>
+            <div className="row" style={{ marginTop: 12 }}>
+              <Button onClick={() => navigate('/inbox')}>
+                <Icon.Inbox size={16} /> Go to my inbox
+              </Button>
+              <Button variant="secondary" onClick={() => navigate('/')}>Back to dashboard</Button>
+            </div>
+          </div>
+        </Card>
+      </>
+    );
+  }
+
   if (typeId && !selected) {
     return (
       <>

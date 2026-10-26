@@ -52,9 +52,9 @@ export function ApplicationsPage() {
 
   const filterCounts = STATUS_FILTERS.map((f) => ({ ...f, count: mine.filter((a) => f.match(a.status)).length }));
 
-  const availableTypes = data.applicationTypes.filter(
-    (t) => t.active && t.applicant_kinds.includes(session.profile.kind),
-  );
+  const availableTypes = session.canSubmit
+    ? data.applicationTypes.filter((t) => t.active && t.applicant_kinds.includes(session.profile.kind))
+    : [];
 
   return (
     <>
@@ -117,7 +117,9 @@ export function ApplicationsPage() {
               description={
                 mine.length
                   ? 'Try a different status, type or search term.'
-                  : 'When you submit an application it will appear here with its live status.'
+                  : session.canSubmit
+                    ? 'When you submit an application it will appear here with its live status.'
+                    : 'Your post approves applications but never raises them, so there is nothing to list here.'
               }
               action={
                 availableTypes.length ? (
