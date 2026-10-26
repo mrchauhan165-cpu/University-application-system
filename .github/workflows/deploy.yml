@@ -29,7 +29,8 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Match the version the project is developed and tested on.
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -39,8 +40,15 @@ jobs:
         run: npm run typecheck
 
       - name: Run tests
-        run: npm test
-        # UI tests run in jsdom, so no browser download is needed in CI.
+        # Output is captured so a failure can be explained on the run page
+        # (see the next step) instead of just "exit code 1".
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee vitest.log
+
+      - name: Explain test failures
+        if: failure()
+        run: node scripts/annotate-failures.mjs vitest.log
 
       - name: Configure Pages
         id: pages
