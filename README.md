@@ -16,6 +16,8 @@ hosted on GitHub Pages, Netlify, S3, nginx, or any other static host.
 
 ## Quick start
 
+Requires **Node.js 20 or newer** (CI and the tests run on Node 22).
+
 ```bash
 npm install
 npm run dev        # http://localhost:5173
