@@ -267,3 +267,43 @@ describe('administration through the UI', () => {
     expect(backend.peek().batches.filter((b) => b.label === 'CSE 2026–2030')).toHaveLength(1);
   });
 });
+
+describe('student self-service account changes', () => {
+  it('the sign-in page no longer lists demo accounts', async () => {
+    setup();
+    await waitFor(() => expect(document.getElementById('email')).toBeTruthy());
+    expect(document.body.textContent).not.toContain('Demo accounts');
+    expect(document.body.textContent).not.toContain('click to fill');
+  });
+
+  it('a student can change their username on the profile page and sign in with it', async () => {
+    const { backend } = setup();
+    await signInThroughTheForm('student.c@demo.university');
+    go('#/profile');
+    await waitFor(() => expect(document.getElementById('profile-username')).toBeTruthy(), { timeout: 10000 });
+
+    type('profile-username', 'chirag.updated@demo.university');
+    type('username-password', PASSWORD);
+    fireEvent.click(buttonContaining('Update username')!);
+    await waitFor(() => expect(document.body.textContent).toContain('Username changed'), { timeout: 10000 });
+    expect(backend.peek().profiles.find((p) => p.email === 'chirag.updated@demo.university')).toBeTruthy();
+
+    cleanup();
+    await backend.signOut();
+    const signed = await backend.signIn('chirag.updated@demo.university', PASSWORD);
+    expect(signed.user.profile.user_code).toBe('STU0003');
+  });
+
+  it('a student cannot edit their personal details, only username and password fields exist', async () => {
+    setup();
+    await signInThroughTheForm('student.a@demo.university');
+    go('#/profile');
+    await waitFor(() => expect(document.body.textContent).toContain('Personal details'), { timeout: 10000 });
+    const editable = [...document.querySelectorAll('input, select, textarea')].map((el) => el.id);
+    expect(editable).toContain('profile-username');
+    expect(editable).toContain('current-password');
+    expect(editable).not.toContain('full_name');
+    expect(editable).not.toContain('email');
+    expect(document.body.textContent).toContain('cannot be changed from this page');
+  });
+});

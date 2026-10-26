@@ -465,18 +465,6 @@ legend { padding: 0 6px; font-size: 0.8rem; font-weight: 700; color: var(--ink-2
 .auth-card .card { padding: 26px; }
 .auth-title { font-size: 1.35rem; margin-bottom: 4px; }
 .auth-sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 20px; }
-.demo-accounts { margin-top: 18px; }
-.demo-accounts summary { cursor: pointer; font-size: 0.82rem; font-weight: 600; color: var(--blue); }
-.demo-table { margin-top: 10px; max-height: 260px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px; }
-.demo-row {
-  display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-bottom: 1px solid var(--line);
-  font-size: 0.78rem; cursor: pointer; background: none; border-left: 0; border-right: 0; border-top: 0; width: 100%; text-align: left;
-}
-.demo-row:last-child { border-bottom: 0; }
-.demo-row:hover { background: var(--blue-50); }
-.demo-row .dr-role { flex: 1; min-width: 0; }
-.demo-row .dr-email { color: var(--muted); font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; }
-
 /* -------------------------------------------------------------- mobile */
 
 .mobile-overlay {

@@ -59,6 +59,7 @@ import {
   saveSection,
   saveSettings,
   saveUser,
+  validateEmail,
   saveWorkflow,
   setBatchStatus,
   setUserStatus,
@@ -93,11 +94,11 @@ export interface BackendApi {
   getSession(): SessionUser | null;
   getView(): AppData;
   getSettings(): Settings;
-  /** only used by the sign-in screen and admin tooling */
-  demoAccounts(): { email: string; role: string; password: string }[];
   signIn(email: string, password: string): Promise<SignInResult>;
   signOut(): void;
   changePassword(current: string, next: string): Promise<void>;
+  /** A student may change their own sign-in username. Profile data stays admin-managed. */
+  changeUsername(next: string, currentPassword: string): Promise<void>;
   requestPasswordReset(email: string): Promise<{ token: string; expires_at: string }>;
   resetPassword(token: string, next: string): Promise<void>;
   createActivation(userId: string): Promise<{ token: string; expires_at: string }>;
@@ -299,22 +300,6 @@ export class LocalBackend {
     return viewData(this.data, session, new Date().toISOString());
   }
 
-  demoAccounts(): { email: string; role: string; password: string }[] {
-    const order = ['usr_sysadmin', 'usr_wfadmin', 'usr_vc', 'usr_chancellor', 'usr_registrar', 'usr_dean_eng', 'usr_hod_cse', 'usr_mentor_a', 'usr_mentor_b', 'usr_teacher', 'usr_student_a', 'usr_student_b', 'usr_auditor', 'usr_former_hod'];
-    const rows = order
-      .map((id) => this.data.profiles.find((p) => p.id === id))
-      .filter((p): p is Profile => Boolean(p))
-      .map((p) => ({
-        email: p.email,
-        role: `${p.full_name} · ${this.data.assignments
-          .filter((a) => a.user_id === p.id && a.active)
-          .map((a) => this.data.posts.find((post) => post.code === a.post_code)?.name ?? a.post_code)
-          .join(', ') || (p.kind === 'student' ? 'Student' : 'Staff (no post)')}`,
-        password: DEMO_PASSWORD,
-      }));
-    return rows;
-  }
-
   private requireSession(): SessionUser {
     const session = this.getSession();
     if (!session) fail('unauthenticated', 'Please sign in to continue.');
@@ -402,6 +387,46 @@ export class LocalBackend {
     record!.must_change_password = false;
     record!.updated_at = new Date().toISOString();
     this.persist();
+    this.emit();
+  }
+
+  async changeUsername(next: string, currentPassword: string): Promise<void> {
+    const session = this.requireSession();
+    const self = this.data.profiles.find((p) => p.id === session.profile.id);
+    if (!self) fail('not_found', 'Account record not found.');
+    if (self!.kind !== 'student') {
+      fail('forbidden', 'Only a student can change their own username. Ask the university administrator.');
+    }
+    const email = next.trim().toLowerCase();
+    if (!validateEmail(email)) {
+      fail('validation', 'Enter a valid email address to use as your username.', {
+        fields: { username: 'Enter a valid email address.' },
+      });
+    }
+    const record = this.auth.find((a) => a.user_id === self!.id);
+    if (!record) fail('not_found', 'Account record not found.');
+    if (!verifyPassword(currentPassword, record!.salt, record!.hash)) {
+      fail('invalid_credentials', 'Your current password is incorrect.', {
+        fields: { password: 'Incorrect password' },
+      });
+    }
+    if (self!.email.toLowerCase() === email) {
+      fail('validation', 'That is already your username.', { fields: { username: 'No change' } });
+    }
+    if (this.data.profiles.some((p) => p.id !== self!.id && p.email.toLowerCase() === email)) {
+      fail('conflict', 'That username is already in use.', { fields: { username: 'Already in use' } });
+    }
+    const before = self!.email;
+    this.mutate((ctx) => {
+      const p = ctx.data.profiles.find((x) => x.id === self!.id)!;
+      p.email = email;
+      ctx.audit('user.username_change', 'profile', p.id, { before, after: email, by: 'self-service' });
+    });
+    const updated = this.auth.find((a) => a.user_id === self!.id);
+    if (updated) {
+      updated.updated_at = new Date().toISOString();
+      this.persist();
+    }
     this.emit();
   }
 

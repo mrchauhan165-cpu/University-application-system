@@ -14,8 +14,6 @@ export function LoginPage() {
   const [mode, setMode] = useState<'signin' | 'reset' | 'reset-sent'>('signin');
   const [resetToken, setResetToken] = useState<string | null>(null);
 
-  const demo = backend.demoAccounts();
-
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -110,39 +108,10 @@ export function LoginPage() {
                       Forgot password?
                     </button>
                     <span style={{ fontSize: '0.76rem', color: 'var(--muted)' }}>
-                      Accounts are created by the university administrator.
+                      Accounts are created by the administrator.
                     </span>
                   </div>
                 </div>
-
-                {demo.length ? (
-                  <details className="demo-accounts">
-                    <summary>Demo accounts (prototype only — click to fill)</summary>
-                    <p style={{ fontSize: '0.76rem', color: 'var(--muted)', margin: '8px 0' }}>
-                      These are seeded test accounts with the shared demo password <code>{demo[0].password}</code>.
-                      They are not real people and must never be used as production credentials.
-                    </p>
-                    <div className="demo-table">
-                      {demo.map((acc) => (
-                        <button
-                          key={acc.email}
-                          type="button"
-                          className="demo-row"
-                          onClick={() => {
-                            setEmail(acc.email);
-                            setPassword(acc.password);
-                          }}
-                        >
-                          <span className="dr-role">
-                            <strong>{acc.role}</strong>
-                            <div className="dr-email">{acc.email}</div>
-                          </span>
-                          <Icon.Chevron size={14} />
-                        </button>
-                      ))}
-                    </div>
-                  </details>
-                ) : null}
               </form>
             ) : mode === 'reset' ? (
               <form onSubmit={sendReset} noValidate>
