@@ -42,11 +42,19 @@ jobs:
         run: npm test
         # UI tests run in jsdom, so no browser download is needed in CI.
 
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+        with:
+          # Turns Pages on with the workflow build type if it is not enabled yet,
+          # so no manual Settings toggle is needed. Requires pages: write (above).
+          enablement: true
+
       - name: Build static site
-        # Project pages live under /<repo>/ — for a user site or custom domain
-        # set BASE_PATH to "/" in the repository variables (Settings → Variables).
+        # Base path comes from Pages itself (/<repo>/ for project sites, / for user
+        # sites and custom domains). BASE_PATH can override it (Settings → Variables).
         env:
-          VITE_BASE_PATH: ${{ vars.BASE_PATH || format('/{0}/', github.event.repository.name) }}
+          VITE_BASE_PATH: ${{ vars.BASE_PATH || format('{0}/', steps.pages.outputs.base_path) }}
         run: npm run build
 
       - name: Make sure no source maps or secrets ship
@@ -65,7 +73,7 @@ jobs:
             echo ""
             echo "Commit: ${GITHUB_SHA:0:7}"
             echo ""
-            echo "Site: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+            echo "Site: ${{ steps.pages.outputs.base_url }}/"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Pages artifact

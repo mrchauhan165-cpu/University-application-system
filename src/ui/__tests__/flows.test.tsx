@@ -1,14 +1,14 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { render, waitFor, cleanup, fireEvent } from '@testing-library/react';
 import { App } from '../../App';
-import { LocalBackend } from '../../backend/local';
-import { MemoryPersistence } from '../../backend/store';
 import { DEMO_PASSWORD } from '../../backend/seed';
+import { makeBackend } from '../../backend/__tests__/helpers';
+import './testing-library-setup';
 
 const PASSWORD = DEMO_PASSWORD;
 
 function setup() {
-  const backend = new LocalBackend(new MemoryPersistence());
+  const backend = makeBackend();
   const view = render(<App backend={backend} />);
   return { backend, view };
 }
@@ -159,7 +159,7 @@ describe('officer workflow through the UI', () => {
 
 describe('former post holders lose access', () => {
   it('former HOD cannot open a CSE application URL', async () => {
-    const backend = new LocalBackend(new MemoryPersistence());
+    const backend = makeBackend();
     await backend.signIn('hod.cse@demo.university', PASSWORD);
     const app = backend.peek().applications.find((a) => a.current_post === 'HOD');
     expect(app, 'seed data should contain an application pending with the HOD').toBeTruthy();

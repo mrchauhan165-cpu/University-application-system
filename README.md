@@ -179,11 +179,14 @@ Run them with `npm test`. UI tests use jsdom, so no browser download is needed.
 push to `main`:
 
 1. Push the repository to GitHub.
-2. **Settings → Pages → Build and deployment → Source: GitHub Actions.**
-3. Push to `main`. The site appears at
-   `https://<user>.github.io/<repository>/` (the workflow sets the base path
-   automatically; set the repository variable `BASE_PATH=/` for a user site or a
-   custom domain).
+2. Nothing to switch on: the workflow calls `actions/configure-pages` with
+   `enablement: true`, so Pages is turned on (Source: GitHub Actions) on the
+   first run. If your organisation blocks that, set
+   **Settings → Pages → Source: GitHub Actions** once by hand.
+3. That is it — the site appears at `https://<user>.github.io/<repository>/`.
+   The base path is read from Pages itself, so project sites, user sites and
+   custom domains all work without editing anything (override with the
+   repository variable `BASE_PATH` only if you need to).
 
 ### Any other static host
 

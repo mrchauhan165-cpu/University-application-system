@@ -3,6 +3,8 @@ import { render, waitFor, cleanup, fireEvent } from '@testing-library/react';
 import { App } from '../../App';
 import { LocalBackend } from '../../backend/local';
 import { DEMO_PASSWORD } from '../../backend/seed';
+import { makeBackend } from '../../backend/__tests__/helpers';
+import './testing-library-setup';
 
 const realDescriptor = Object.getOwnPropertyDescriptor(window, 'localStorage');
 
@@ -28,6 +30,10 @@ afterEach(() => {
 describe('embedded previews that block browser storage', () => {
   it('still boots, signs in and shows the preview warning', async () => {
     blockStorage();
+    // Prime the seed copy while storage is still readable, then boot with the
+    // real (blocked) browser storage so the in-memory fallback is what we test.
+    const primed = makeBackend();
+    expect(primed.getView).toBeTruthy();
     const backend = new LocalBackend(); // uses the (blocked) browser storage
     expect(backend.storageMode).toBe('memory');
 
