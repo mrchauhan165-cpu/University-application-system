@@ -5,6 +5,8 @@ name: Build and deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  # Can be run by hand on ANY branch: Actions -> this workflow -> Run workflow ->
+  # pick the branch. That publishes a preview without merging anything.
   workflow_dispatch:
 
 # Least privilege: only what Pages deployment needs.
@@ -54,6 +56,16 @@ jobs:
           if grep -rIl "service_role" dist 2>/dev/null; then
             echo "Service role reference found in the bundle"; exit 1;
           fi
+
+      - name: Workflow summary
+        run: |
+          {
+            echo "### Deployed ${GITHUB_REF_NAME}"
+            echo ""
+            echo "Commit: ${GITHUB_SHA:0:7}"
+            echo ""
+            echo "Site: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
