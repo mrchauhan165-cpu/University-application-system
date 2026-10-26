@@ -1,11 +1,31 @@
 import { expect } from 'vitest';
 import { LocalBackend } from '../local';
-import { MemoryPersistence } from '../store';
+import { MemoryPersistence, type PersistedState } from '../store';
 import { DEMO_PASSWORD } from '../seed';
+
+/**
+ * Seeding hashes one password per demo account, which costs over a second. Do it
+ * once per test process and hand every test its own deep copy, so tests stay fast
+ * and isolated (a fresh, unmodified data set each time) without re-hashing.
+ */
+let seedTemplate: PersistedState | null = null;
+
+function templateState(): PersistedState {
+  if (!seedTemplate) {
+    const persistence = new MemoryPersistence();
+    const primed = new LocalBackend(persistence);
+    const saved = persistence.load();
+    if (!saved) throw new Error(`Seeding produced no state (${primed.mode})`);
+    seedTemplate = saved;
+  }
+  return seedTemplate;
+}
 
 /** One backend instance == one in-memory "database" for a test. */
 export function makeBackend(): LocalBackend {
-  return new LocalBackend(new MemoryPersistence());
+  const persistence = new MemoryPersistence();
+  persistence.save(templateState()); // saves a deep copy
+  return new LocalBackend(persistence);
 }
 
 export async function signInAs(be: LocalBackend, email: string, password = DEMO_PASSWORD): Promise<LocalBackend> {

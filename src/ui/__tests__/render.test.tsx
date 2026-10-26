@@ -1,13 +1,9 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { render, waitFor, cleanup } from '@testing-library/react';
 import { App } from '../../App';
-import { LocalBackend } from '../../backend/local';
-import { MemoryPersistence } from '../../backend/store';
 import { DEMO_PASSWORD } from '../../backend/seed';
-
-function makeBackend() {
-  return new LocalBackend(new MemoryPersistence());
-}
+import { makeBackend } from '../../backend/__tests__/helpers';
+import './testing-library-setup';
 
 async function openAt(email: string, hash: string) {
   const backend = makeBackend();
