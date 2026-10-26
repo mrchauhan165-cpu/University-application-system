@@ -116,6 +116,19 @@ describe('other request', () => {
     expect(again.current_post).toBe('HOD');
   });
 
+  it('a mentor’s own request goes to the HOD, and an HOD’s own request goes to the Dean', async () => {
+    const mentor = await asUser(EMAILS.mentorA);
+    const mentorDraft = mentor.createDraft('at_other', OTHER);
+    expect(mentor.submit(mentorDraft.id).current_post).toBe('HOD');
+
+    const hod = await asUser(EMAILS.hodCse);
+    const hodDraft = hod.createDraft('at_other', OTHER);
+    const routed = hod.submit(hodDraft.id);
+    // both configured stages are skipped (self-approval), so the fallback approver decides
+    expect(routed.current_post).toBe('DEAN');
+    expect(routed.status).toBe('submitted');
+  });
+
   it('rejects an empty subject or details and an over-long subject', async () => {
     const be = await asUser(EMAILS.studentA);
     expectThrows(() => be.createDraft('at_other', { subject: 'x'.repeat(161), details: 'ok' }), 'validation');
