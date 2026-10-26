@@ -32,6 +32,24 @@ export function fromNow(value: string | Date | null | undefined): string {
   }
 }
 
+/** Whole days since an ISO timestamp, never negative. */
+export function daysSince(value: string | Date | null | undefined): number {
+  const d = toDate(value);
+  if (!d) return 0;
+  return Math.max(0, Math.floor((Date.now() - d.getTime()) / 86_400_000));
+}
+
+/** Short, human ageing label used on queues: Today / 1 day / 5 days. */
+export function ageLabel(days: number): string {
+  if (days <= 0) return 'Today';
+  return `${days} day${days === 1 ? '' : 's'}`;
+}
+
+/** Tone for an ageing badge: calm under a day, warm after 1, urgent after 3. */
+export function ageTone(days: number): 'neutral' | 'warn' | 'danger' {
+  return days >= 3 ? 'danger' : days >= 1 ? 'warn' : 'neutral';
+}
+
 export function todayInput(): string {
   return new Date().toISOString().slice(0, 10);
 }

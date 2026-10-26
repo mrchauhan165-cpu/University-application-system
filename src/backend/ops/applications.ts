@@ -554,11 +554,11 @@ export function actOnApplication(ctx: OpContext, appId: string, input: ActInput)
         ctx,
         app,
         'further_pending',
-        'Approved by the final configured authority — further approval pending',
+        'Approved and forwarded — further approval pending',
         null,
       );
       notifyApplicant(
-        'Approved at the final authority — further approval pending',
+        'Approved and forwarded — further approval pending',
         `${app.reference} was approved by the final configured authority and is awaiting completion by a higher office. This is not yet a final approval.`,
         'forwarded-beyond',
       );

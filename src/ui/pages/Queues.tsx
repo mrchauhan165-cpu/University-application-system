@@ -15,9 +15,11 @@ import {
   TextInput,
 } from '../components/UI';
 import { useApp, useSession } from '../context';
-import { formatDateTime, fromNow } from '../lib/format';
+import { ageLabel, ageTone, daysSince, formatDateTime } from '../lib/format';
+import { ProgressDots } from '../components/Progress';
 import {
   applicationOrgText,
+  applicationSteps,
   historyForSession,
   pendingForSession,
   postName,
@@ -134,8 +136,15 @@ export function InboxPage() {
                         <div className="cell-sub">{applicationOrgText(data, app)}</div>
                       </td>
                       <td data-label="Post">{postName(data, app.current_post)}</td>
-                      <td data-label="Waiting">{fromNow(app.submitted_at)}</td>
-                      <td data-label="Status"><StatusChip status={app.status} /></td>
+                      <td data-label="Waiting">
+                        <Chip tone={ageTone(daysSince(app.submitted_at))}>{ageLabel(daysSince(app.submitted_at))}</Chip>
+                      </td>
+                      <td data-label="Status">
+                        <div className="row tight">
+                          <StatusChip status={app.status} />
+                          <ProgressDots steps={applicationSteps(data, app)} />
+                        </div>
+                      </td>
                       <td style={{ textAlign: 'right' }}>
                         <Button size="small" onClick={() => { window.location.hash = `#/applications/${app.id}`; }}>
                           Review
