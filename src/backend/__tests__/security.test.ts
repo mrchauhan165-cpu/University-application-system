@@ -208,7 +208,7 @@ describe('post handover and history', () => {
     }
     const historyApp = historyPost[0].application_id;
     const shown = newHodView.actions.filter((a) => a.application_id === historyApp && a.post_code === 'HOD');
-    expect(shown.some((a) => a.actor_name.includes('Head CSE'))).toBe(true);
+    expect(shown.some((a) => a.actor_name.includes('Gita Menon'))).toBe(true);
 
     // the replaced holder lost the post and its history
     await signInAs(be, EMAILS.hodCse);

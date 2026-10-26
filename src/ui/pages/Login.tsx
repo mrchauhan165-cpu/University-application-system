@@ -47,23 +47,55 @@ export function LoginPage() {
   return (
     <div className="auth-shell">
       <section className="auth-hero" aria-label="About this portal">
-        <div className="auth-badge">
-          <Icon.Shield size={14} /> Role-based access · Post-based approvals
-        </div>
-        <h1>{data.settings.university_name} application portal</h1>
-        <p>
-          Submit and track applications, review them through the configured approval chain, publish
-          scoped notices and read statistics — all from one place.
-        </p>
-        <div className="hero-list">
-          <div className="hero-item"><Icon.Check size={18} /><span>Students see only their own applications and documents.</span></div>
-          <div className="hero-item"><Icon.Check size={18} /><span>Officers act only through their <strong>current</strong> post and organisational scope.</span></div>
-          <div className="hero-item"><Icon.Check size={18} /><span>Application history belongs to the post, not to a former employee’s account.</span></div>
-          <div className="hero-item"><Icon.Check size={18} /><span>VC “Approve and forward” never marks an application fully approved.</span></div>
-          <div className="hero-item"><Icon.Check size={18} /><span>Confidential files stay private — even from system administrators.</span></div>
-        </div>
-        <div className="auth-badge" style={{ marginTop: 'auto' }}>
-          <Icon.Info size={14} /> Demo prototype with sample data
+        <div className="auth-hero-inner">
+          <div className="auth-brand">
+            <span className="auth-brand-mark" aria-hidden="true">{data.settings.university_short.slice(0, 3)}</span>
+            <div>
+              <div className="auth-brand-name">{data.settings.university_name}</div>
+              <div className="auth-brand-sub">University application system</div>
+            </div>
+          </div>
+
+          <div className="auth-eyebrow">
+            <span className="dot" aria-hidden="true" /> Post-based approvals · live
+          </div>
+
+          <h1 className="auth-headline">
+            Apply, approve and track — <span className="grad">without a single email trail</span>.
+          </h1>
+
+          <p className="auth-lead">
+            One portal for students, mentors, heads of department, deans and the
+            Vice-Chancellor. Every decision is routed to the right post and scope, and
+            recorded permanently.
+          </p>
+
+          <div className="hero-list">
+            <div className="hero-item"><Icon.Check size={18} /><span>Students see only their <strong>own</strong> applications and documents.</span></div>
+            <div className="hero-item"><Icon.Check size={18} /><span>Officers act only through their <strong>current</strong> post and organisational scope.</span></div>
+            <div className="hero-item"><Icon.Check size={18} /><span>Application history belongs to the post, not to a former employee’s account.</span></div>
+            <div className="hero-item"><Icon.Check size={18} /><span>VC “Approve and forward” never marks an application fully approved.</span></div>
+            <div className="hero-item"><Icon.Check size={18} /><span>Confidential files stay private — even from system administrators.</span></div>
+          </div>
+
+          <div className="auth-stats">
+            <div className="auth-stat">
+              <div className="auth-stat-value">{data.faculties.filter((f) => !f.archived).length}</div>
+              <div className="auth-stat-label">Faculties</div>
+            </div>
+            <div className="auth-stat">
+              <div className="auth-stat-value">{data.departments.filter((d) => !d.archived).length}</div>
+              <div className="auth-stat-label">Departments</div>
+            </div>
+            <div className="auth-stat">
+              <div className="auth-stat-value">100%</div>
+              <div className="auth-stat-label">Post-scoped access</div>
+            </div>
+          </div>
+
+          <div className="auth-trust">
+            <Icon.Shield size={14} /> Passwords are hashed · every action is audited · demo data only
+          </div>
         </div>
       </section>
 
@@ -72,8 +104,8 @@ export function LoginPage() {
           <div className="card">
             {mode === 'signin' ? (
               <form onSubmit={submit} noValidate>
-                <h1 className="auth-title">Sign in</h1>
-                <p className="auth-sub">Use your university email address and password.</p>
+                <h1 className="auth-title">Welcome back</h1>
+                <p className="auth-sub">Sign in with your university email address and password.</p>
 
                 {error ? <Alert tone="danger">{error}</Alert> : null}
 

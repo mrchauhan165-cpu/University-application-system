@@ -280,7 +280,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
         </header>
-        <main id="main" className="page" tabIndex={-1}>
+        <main id="main" className="page" tabIndex={-1} key={route.path}>
           {backend.storageMode === 'memory' ? (
             <div className="mb">
               <Alert tone="warn" title="Preview mode — data is not saved.">

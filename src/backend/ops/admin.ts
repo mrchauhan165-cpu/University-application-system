@@ -398,6 +398,7 @@ export function saveAssignment(
     section_id: input.scope.section_id ?? null,
   };
   validateScopeForPost(ctx, post, scope);
+  const fullScope = fillScopeParents(ctx, post, scope);
 
   const startsAt = input.starts_at ? new Date(input.starts_at).toISOString() : ctx.now;
   const sameScope = ctx.data.assignments.find(
@@ -405,7 +406,7 @@ export function saveAssignment(
       a.post_code === post.code &&
       a.active &&
       (a.ends_at === null || a.ends_at > startsAt) &&
-      sameScopeValues(a.scope, scope),
+      sameScopeValues(a.scope, fullScope),
   );
   if (sameScope && sameScope.user_id === user.id) {
     fail('conflict', `${user.full_name} already holds the ${post.name} post for this scope.`);
@@ -434,7 +435,7 @@ export function saveAssignment(
     id: newId('as_'),
     user_id: user.id,
     post_code: post.code,
-    scope,
+    scope: fullScope,
     starts_at: startsAt,
     ends_at: null,
     active: true,
@@ -446,7 +447,7 @@ export function saveAssignment(
   ctx.audit('assignment.create', 'assignment', assignment.id, {
     post: post.code,
     user: user.full_name,
-    scope: scopeLabel(ctx.data, scope),
+    scope: scopeLabel(ctx.data, fullScope),
   });
 
   // hand-over: tell the new holder about work waiting at that post
@@ -529,6 +530,54 @@ export function validateScopeForPost(ctx: OpContext, post: Post, scope: Scope): 
       }
       return;
   }
+}
+
+
+/**
+ * A post's scope must describe the whole path (a section inside a batch inside a
+ * department inside a faculty). Only the level required by the post matters for
+ * access, but a complete scope keeps labels, filtering and audit readable, so the
+ * missing parents are derived from the chosen child. Contradictory input is
+ * rejected instead of being silently "fixed".
+ */
+function fillScopeParents(ctx: OpContext, post: Post, scope: Scope): Scope {
+  const out: Scope = { ...scope };
+  if (scope.section_id) {
+    const section = findSection(ctx.data, scope.section_id);
+    const batch = section ? findBatch(ctx.data, section.batch_id) : undefined;
+    if (batch) {
+      if (scope.batch_id && scope.batch_id !== batch.id) {
+        fail('validation', `That section does not belong to the chosen batch (${post.name}).`);
+      }
+      out.batch_id = batch.id;
+      out.department_id = batch.department_id;
+      const dept = findDepartment(ctx.data, batch.department_id);
+      if (scope.department_id && scope.department_id !== batch.department_id) {
+        fail('validation', `That section does not belong to the chosen department (${post.name}).`);
+      }
+      if (dept) out.faculty_id = dept.faculty_id;
+      if (scope.faculty_id && dept && scope.faculty_id !== dept.faculty_id) {
+        fail('validation', `That section does not belong to the chosen faculty (${post.name}).`);
+      }
+    }
+  } else if (scope.batch_id) {
+    const batch = findBatch(ctx.data, scope.batch_id);
+    if (batch) {
+      if (scope.department_id && scope.department_id !== batch.department_id) {
+        fail('validation', `That batch does not belong to the chosen department (${post.name}).`);
+      }
+      out.department_id = batch.department_id;
+      const dept = findDepartment(ctx.data, batch.department_id);
+      if (dept) out.faculty_id = dept.faculty_id;
+      if (scope.faculty_id && dept && scope.faculty_id !== dept.faculty_id) {
+        fail('validation', `That batch does not belong to the chosen faculty (${post.name}).`);
+      }
+    }
+  } else if (scope.department_id) {
+    const dept = findDepartment(ctx.data, scope.department_id);
+    if (dept) out.faculty_id = dept.faculty_id;
+  }
+  return out;
 }
 
 export function endAssignment(ctx: OpContext, assignmentId: string, reason: string): Assignment {
