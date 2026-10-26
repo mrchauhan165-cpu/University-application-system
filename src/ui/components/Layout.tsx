@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import type { Permission } from '../../domain/types';
 import { Icon } from './Icons';
 import { useApp, navigate } from '../context';
 import { fromNow } from '../lib/format';
@@ -38,7 +39,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (!session) return <>{children}</>;
 
   const permissions = session.permissions;
-  const can = (p: string) => permissions.includes(p as never);
+  const can = (p: Permission) => permissions.includes(p);
 
   const unread = data.notifications.filter((n) => !n.read_at);
   const pendingActions = data.applications.filter(

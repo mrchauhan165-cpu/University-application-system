@@ -7,7 +7,7 @@ hosted on GitHub Pages, Netlify, S3, nginx, or any other static host.
 
 > **Honest status.** This repository contains a complete, working **prototype**
 > with a browser-side service layer. Every rule described below is enforced in
-> `src/backend` and is covered by automated tests (108 of them at the time of
+> `src/backend` and is covered by automated tests (111 of them at the time of
 > writing). It is **not yet connected to a real database, email service or file
 > store**; see [What is not production-ready](#what-is-not-production-ready).
 > All data in the demo is fictional and labelled as such in the interface.
@@ -19,7 +19,7 @@ hosted on GitHub Pages, Netlify, S3, nginx, or any other static host.
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # 108 tests: authorisation, workflow, notices, retention, UI
+npm test           # 111 tests: authorisation, workflow, notices, retention, UI
 npm run build      # typecheck + static build into dist/
 ```
 

@@ -1,6 +1,7 @@
 import { Card, EmptyState, PageHeader, Tabs } from '../../components/UI';
 import { Icon } from '../../components/Icons';
 import { useApp, useSession, navigate } from '../../context';
+import type { Permission } from '../../../domain/types';
 import { StructureTab } from './StructureTab';
 import { PostsTab } from './PostsTab';
 import { UsersTab } from './UsersTab';
@@ -22,7 +23,7 @@ type TabId =
   | 'audit'
   | 'settings';
 
-const TAB_META: { id: TabId; label: string; permission: string }[] = [
+const TAB_META: { id: TabId; label: string; permission: Permission }[] = [
   { id: 'structure', label: 'Organisation', permission: 'user.manage' },
   { id: 'users', label: 'Users', permission: 'user.manage' },
   { id: 'assignments', label: 'Post assignments', permission: 'user.manage' },
@@ -37,7 +38,7 @@ const TAB_META: { id: TabId; label: string; permission: string }[] = [
 export function AdminPage({ tab }: { tab?: string }) {
   const { route } = useApp();
   const session = useSession();
-  const allowed = TAB_META.filter((t) => session.permissions.includes(t.permission as never));
+  const allowed = TAB_META.filter((t) => session.permissions.includes(t.permission));
   const active = (allowed.find((t) => t.id === tab)?.id ?? allowed[0]?.id) as TabId | undefined;
 
   if (!allowed.length) {

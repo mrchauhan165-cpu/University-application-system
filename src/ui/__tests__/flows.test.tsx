@@ -173,3 +173,97 @@ describe('former post holders lose access', () => {
     expect(document.body.textContent).not.toContain(reference);
   });
 });
+
+describe('notices through the UI', () => {
+  it('the VC publishes a university notice and a student can read it', async () => {
+    const { backend } = setup();
+    await signInThroughTheForm('vc@demo.university');
+
+    go('#/notices');
+    await waitFor(() => expect(buttonContaining('New notice')).toBeTruthy());
+    fireEvent.click(buttonContaining('New notice')!);
+
+    await waitFor(() => expect(document.getElementById('notice-title')).toBeTruthy());
+    type('notice-title', 'Library timings during examinations');
+    type('notice-body', 'The central library will remain open until 11 pm from Monday.');
+    fireEvent.click(buttonContaining('Publish')!);
+
+    await waitFor(() => expect(document.body.textContent).toContain('Library timings during examinations'));
+    const notice = backend.peek().notices.find((n) => n.title === 'Library timings during examinations');
+    expect(notice).toBeTruthy();
+    expect(notice!.status).toBe('published');
+    expect(notice!.scope_type).toBe('university');
+
+    cleanup();
+    await backend.signOut();
+    await backend.signIn('student.a@demo.university', PASSWORD);
+    go('#/notices');
+    render(<App backend={backend} />);
+    await waitFor(() => expect(document.body.textContent).toContain('Library timings during examinations'));
+  });
+});
+
+describe('rejection with remarks', () => {
+  it('the applicant sees the rejection reason and the status', async () => {
+    window.confirm = () => true;
+    const { backend } = setup();
+    await signInThroughTheForm('student.a@demo.university');
+    const id = await submitLeaveApplication('Personal travel with family.');
+
+    cleanup();
+    await backend.signOut();
+    await backend.signIn('mentor.a@demo.university', PASSWORD);
+    go(`#/applications/${id}`);
+    render(<App backend={backend} />);
+
+    await waitFor(() => expect(buttonContaining('Take action on this application')).toBeTruthy());
+    fireEvent.click(buttonContaining('Take action on this application')!);
+    await waitFor(() => expect(document.getElementById('action-choice')).toBeTruthy());
+    fireEvent.change(document.getElementById('action-choice')!, { target: { value: 'reject' } });
+    type('applicant-remarks', 'Dates clash with the compulsory laboratory week.');
+    fireEvent.click(buttonContaining('Confirm reject')!);
+
+    await waitFor(() => {
+      const app = backend.peek().applications.find((a) => a.id === id);
+      expect(app!.status).toBe('rejected');
+    });
+
+    cleanup();
+    await backend.signOut();
+    await backend.signIn('student.a@demo.university', PASSWORD);
+    go(`#/applications/${id}`);
+    render(<App backend={backend} />);
+    await waitFor(() => expect(document.body.textContent).toContain('Dates clash with the compulsory laboratory week.'));
+    expect(document.body.textContent).toMatch(/rejected/i);
+  });
+});
+
+describe('administration through the UI', () => {
+  it('adds a batch and rejects a duplicate label', async () => {
+    const { backend } = setup();
+    await signInThroughTheForm('wfadmin@demo.university');
+    go('#/admin/structure');
+    await waitFor(() => expect(buttonContaining('Add batch')).toBeTruthy(), { timeout: 10000 });
+
+    fireEvent.click(buttonContaining('Add batch')!);
+    await waitFor(() => expect(document.getElementById('batch-label')).toBeTruthy());
+    type('batch-label', 'CSE 2026–2030');
+    type('batch-start', '2026');
+    type('batch-end', '2030');
+    fireEvent.click(buttonContaining('Save batch')!);
+
+    await waitFor(() => {
+      expect(backend.peek().batches.some((b) => b.label === 'CSE 2026–2030')).toBe(true);
+    });
+
+    // The same label in the same department must be refused with a message.
+    fireEvent.click(buttonContaining('Add batch')!);
+    await waitFor(() => expect(document.getElementById('batch-label')).toBeTruthy());
+    type('batch-label', 'CSE 2026–2030');
+    type('batch-start', '2026');
+    type('batch-end', '2030');
+    fireEvent.click(buttonContaining('Save batch')!);
+    await waitFor(() => expect(document.body.textContent).toMatch(/exist|duplicate|already/i));
+    expect(backend.peek().batches.filter((b) => b.label === 'CSE 2026–2030')).toHaveLength(1);
+  });
+});
