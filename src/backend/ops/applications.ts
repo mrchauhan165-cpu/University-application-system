@@ -12,14 +12,13 @@ import type {
 import { STATUS_LABEL } from '../../domain/types';
 import type { OpContext } from './context';
 import { grantsFor, postHasHolder } from './context';
-import { can, findGrant, scopeCovers } from '../authz';
+import { findGrant, scopeCovers } from '../authz';
 import { fail } from '../errors';
 import {
   findPost,
   newId,
   nextApplicationReference,
   profileSnapshot,
-  scopeFromProfile,
   scopeLabel,
 } from '../models';
 import { isLastStage, routeFrom, stagePost } from '../workflow';
@@ -108,9 +107,11 @@ export function createApplication(
   if (!maySubmit(profile, type)) {
     fail('forbidden', 'This application type is not available to your account.');
   }
-  const branchGrants = actor.grants;
-  if (branchGrants.length > 0 && !can(branchGrants, 'application.submit', scopeFromProfile(data, profile))) {
-    fail('forbidden', 'Your current post does not include permission to submit this application.');
+  if (!actor.canSubmit) {
+    fail(
+      'forbidden',
+      'Your current post does not allow submitting applications. Dean-level posts and above approve applications but never raise them.',
+    );
   }
   const workflow = activeWorkflow(data, type.id);
   if (!workflow) fail('config_error', 'No active workflow is configured for this application type.');
@@ -229,6 +230,12 @@ export function submitApplication(ctx: OpContext, appId: string): Application {
   }
   const type = data.applicationTypes.find((t) => t.id === app.application_type_id);
   if (!type) fail('not_found', 'Application type not found.');
+  if (!actor.canSubmit) {
+    fail(
+      'forbidden',
+      'Your current post does not allow submitting applications. Dean-level posts and above approve applications but never raise them.',
+    );
+  }
   const workflow = data.workflows.find((w) => w.id === app.workflow_version_id);
   if (!workflow) fail('config_error', 'The workflow version used by this application is unavailable.');
   if (type.confidential === false && app.confidential) app.confidential = false;

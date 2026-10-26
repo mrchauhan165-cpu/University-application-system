@@ -476,6 +476,13 @@ export interface SessionUser {
   isAdmin: boolean;
   /** posts currently held per assignment, for messaging */
   postNames: string[];
+  /**
+   * May this account submit applications? Students always may. Staff may while
+   * they hold no post (base staff right); once they hold posts, the posts must
+   * grant `application.submit`. Dean-level and above posts deliberately do not,
+   * so senior officers cannot apply — only approve.
+   */
+  canSubmit: boolean;
 }
 
 export const STATUS_LABEL: Record<AppStatus, string> = {

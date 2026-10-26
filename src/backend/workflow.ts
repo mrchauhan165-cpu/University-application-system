@@ -1,10 +1,28 @@
-import type { Scope, WorkflowStage, WorkflowVersion } from '../domain/types';
+import type { Scope, ScopeType, WorkflowStage, WorkflowVersion } from '../domain/types';
 import type { Grant } from './authz';
 import { holdsPostInScope, scopeCovers } from './authz';
 
 export interface RoutingHooks {
   /** true when at least one live assignment holds this post in the scope */
   postHasHolder: (postCode: string, scope: Scope) => boolean;
+  /** scope type of a configured post, used to skip stages that cannot apply */
+  postScopeType?: (postCode: string) => ScopeType | null;
+}
+
+/**
+ * A stage is not applicable when its post is scoped to a level the application
+ * does not have (a staff application has no batch or section, so a mentor stage
+ * can never be acted on). Routing past it is the only safe option: leaving it in
+ * place would strand the application with an officer who cannot see it.
+ */
+export function stageNotApplicable(stage: WorkflowStage, org: Scope, hooks: RoutingHooks): boolean {
+  const scopeType = hooks.postScopeType?.(stage.post_code);
+  if (!scopeType || scopeType === 'university') return false;
+  if (scopeType === 'faculty') return !org.faculty_id;
+  if (scopeType === 'department') return !org.department_id;
+  if (scopeType === 'batch') return !org.batch_id;
+  if (scopeType === 'section') return !org.section_id;
+  return false;
 }
 
 export interface RoutingResult {
@@ -27,6 +45,7 @@ export function stageMustSkip(
   hooks: RoutingHooks,
 ): boolean {
   if (holdsPostInScope(applicantGrants, stage.post_code, org)) return true;
+  if (stageNotApplicable(stage, org, hooks)) return true;
   if (stage.optional && !hooks.postHasHolder(stage.post_code, org)) return true;
   return false;
 }

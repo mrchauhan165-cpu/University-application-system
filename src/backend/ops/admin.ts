@@ -17,7 +17,7 @@ import type {
 } from '../../domain/types';
 import type { OpContext } from './context';
 import type { Grant } from '../authz';
-import { can } from '../authz';
+import { can, isAssignmentLive } from '../authz';
 import { fail } from '../errors';
 import { randomToken } from '../crypto';
 import {
@@ -312,7 +312,16 @@ export function saveUser(ctx: OpContext, input: UserInput): { profile: Profile; 
       p.section_id = input.section_id ?? null;
       p.roll_no = input.roll_no ?? p.roll_no;
     } else {
-      p.home_department_id = input.department_id ?? p.home_department_id;
+      const nextDept = input.department_id ?? p.home_department_id;
+      if (nextDept && nextDept !== p.home_department_id) {
+        assertDepartmentMoveAllowed(ctx, p, nextDept);
+        ctx.audit('user.department_change', 'profile', p.id, {
+          from: findDepartment(ctx.data, p.home_department_id)?.name ?? 'Unassigned',
+          to: findDepartment(ctx.data, nextDept)?.name ?? nextDept,
+          via: 'profile-edit',
+        });
+      }
+      p.home_department_id = nextDept;
       p.designation = input.designation ?? p.designation;
     }
     ctx.audit('user.update', 'profile', p.id, { email, kind: p.kind });
@@ -347,6 +356,87 @@ export function saveUser(ctx: OpContext, input: UserInput): { profile: Profile; 
   const activationToken = randomToken(20);
   ctx.audit('user.create', 'profile', profile.id, { email, code: profile.user_code, kind: profile.kind });
   return { profile, activationToken };
+}
+
+/* ------------------------------------------------- department transfers */
+
+/** Department a post assignment actually covers, resolved from its scope. */
+function assignmentDepartmentId(ctx: OpContext, a: Assignment): string | null {
+  if (a.scope.section_id) {
+    const sec = findSection(ctx.data, a.scope.section_id);
+    return ctx.data.batches.find((b) => b.id === sec?.batch_id)?.department_id ?? null;
+  }
+  if (a.scope.batch_id) return findBatch(ctx.data, a.scope.batch_id)?.department_id ?? null;
+  if (a.scope.department_id) return a.scope.department_id;
+  return null;
+}
+
+/**
+ * A teacher who still holds a live post keeps access through that post, so
+ * moving their home department would silently leave them in charge of the old
+ * department's queue. Refuse, and name the post that has to be handed over first.
+ */
+export function assertDepartmentMoveAllowed(
+  ctx: OpContext,
+  profile: Profile,
+  targetDepartmentId: string,
+): void {
+  const target = findDepartment(ctx.data, targetDepartmentId);
+  if (!target) fail('not_found', 'Department not found.');
+  const blockers = ctx.data.assignments.filter((a) => {
+    if (a.user_id !== profile.id || !isAssignmentLive(a, ctx.now)) return false;
+    const deptId = assignmentDepartmentId(ctx, a);
+    if (!deptId) return a.scope.faculty_id ? a.scope.faculty_id !== target.faculty_id : false;
+    return deptId !== target.id;
+  });
+  if (!blockers.length) return;
+  const first = blockers[0];
+  const post = findPost(ctx.data, first.post_code);
+  fail(
+    'conflict',
+    `${profile.full_name} still holds “${post?.name ?? first.post_code}” for ${scopeLabel(
+      ctx.data,
+      first.scope,
+    )}. Hand that post over to someone else (Administration → Posts & permissions) and then change the department, otherwise they would keep the old department’s queue.`,
+    {
+      blockers: blockers.map((a) => ({ assignment_id: a.id, post_code: a.post_code })),
+      fields: { department_id: 'Post must be handed over first' },
+    },
+  );
+}
+
+export function changeUserDepartment(
+  ctx: OpContext,
+  input: { user_id: string; department_id: string; reason?: string | null },
+): Profile {
+  requirePerm(ctx, 'user.manage', 'You are not authorised to move staff between departments.');
+  const profile = findProfile(ctx.data, input.user_id);
+  if (!profile) fail('not_found', 'User not found.');
+  if (profile.kind === 'student') {
+    fail('validation', 'Students are moved by changing their batch, not their department.');
+  }
+  const target = findDepartment(ctx.data, input.department_id);
+  if (!target || target.archived) fail('validation', 'Choose an active department.', { fields: { department_id: 'Required' } });
+  if (profile.home_department_id === target.id) {
+    fail('validation', 'That teacher is already in this department.', { fields: { department_id: 'Already there' } });
+  }
+  assertDepartmentMoveAllowed(ctx, profile, target.id);
+  const from = findDepartment(ctx.data, profile.home_department_id);
+  profile.home_department_id = target.id;
+  ctx.audit('user.department_change', 'profile', profile.id, {
+    from: from?.name ?? 'Unassigned',
+    from_id: from?.id ?? null,
+    to: target.name,
+    to_id: target.id,
+    reason: input.reason ?? null,
+  });
+  ctx.notify({
+    userId: profile.id,
+    title: 'Department updated',
+    body: `Your department is now ${target.name}. Your applications and approvals follow you automatically.`,
+    category: 'system',
+  });
+  return profile;
 }
 
 export function setUserStatus(ctx: OpContext, userId: string, status: Profile['status']): Profile {

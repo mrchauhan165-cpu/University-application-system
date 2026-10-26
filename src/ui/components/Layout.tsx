@@ -53,10 +53,16 @@ export function AppShell({ children }: { children: ReactNode }) {
     (n) => n.status === 'published' && !data.noticeReads.some((r) => r.notice_id === n.id),
   ).length;
 
+  // Only offer the entry when there is something this person could actually raise.
+  const canRaiseApplication =
+    session.canSubmit && data.applicationTypes.some((t) => t.active && t.applicant_kinds.includes(session.profile.kind));
   const mainNav: NavItem[] = [
     { label: 'Dashboard', to: '/', icon: <Icon.Home size={18} /> },
     { label: 'My Applications', to: '/applications', icon: <Icon.File size={18} /> },
-    { label: 'New Application', to: '/applications/new', icon: <Icon.Plus size={18} /> },
+    // Dean level and above only approve, so they never get a "new application" entry.
+    ...(canRaiseApplication
+      ? [{ label: 'New Application', to: '/applications/new', icon: <Icon.Plus size={18} /> }]
+      : []),
     { label: 'Notices', to: '/notices', icon: <Icon.Book size={18} />, badge: unreadNotices },
   ];
 

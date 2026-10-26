@@ -60,6 +60,7 @@ export const Icon = {
   Trash: (p: Props) => base(p, <><path d="M4 7h16" /><path d="M9 7V4h6v3" /><path d="M6 7v13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7" /><path d="M10 11v6M14 11v6" /></>),
   Copy: (p: Props) => base(p, <><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M15 5.5A1.5 1.5 0 0 0 13.5 4H5.5A1.5 1.5 0 0 0 4 5.5v8A1.5 1.5 0 0 0 5.5 15H6" /></>),
   Filter: (p: Props) => base(p, <><path d="M3 5h18l-7 8.5V20l-4-2v-4.5z" /></>),
+  Swap: (p: Props) => base(p, <><path d="M4 8h13" /><path d="m14 5 3 3-3 3" /><path d="M20 16H7" /><path d="m10 13-3 3 3 3" /></>),
 };
 
 export type IconName = keyof typeof Icon;

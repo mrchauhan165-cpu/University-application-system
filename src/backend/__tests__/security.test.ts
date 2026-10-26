@@ -288,17 +288,18 @@ describe('self approval', () => {
     expectThrows(() => be.act(draft.id, { action: 'approve' }), 'forbidden');
   });
 
-  it('a Dean’s own leave routes above the Dean', async () => {
+  it('a Dean cannot raise an application at all — the post only approves', async () => {
     const be = await asUser(EMAILS.deanEng);
-    const draft = be.createDraft('at_faculty_leave', {
-      leave_type: 'Duty leave',
-      from_date: '2026-12-01',
-      to_date: '2026-12-02',
-      reason: 'Official delegation to a partner university.',
-    });
-    be.submit(draft.id);
-    const app = be.getView().applications.find((a) => a.id === draft.id)!;
-    expect(['VC', 'HOD']).toContain(app.current_post);
-    expect(app.current_post).not.toBe('DEAN');
+    expect(be.getSession()!.canSubmit).toBe(false);
+    expectThrows(
+      () =>
+        be.createDraft('at_faculty_leave', {
+          leave_type: 'Duty leave',
+          from_date: '2026-12-01',
+          to_date: '2026-12-02',
+          reason: 'Official delegation to a partner university.',
+        }),
+      'forbidden',
+    );
   });
 });

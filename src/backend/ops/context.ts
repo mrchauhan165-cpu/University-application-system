@@ -79,6 +79,7 @@ export function makeContext(
 
   const hooks: RoutingHooks = {
     postHasHolder: (postCode: string, scope: Scope) => postHasHolder(data, postCode, scope, now),
+    postScopeType: (postCode: string) => data.posts.find((p) => p.code === postCode)?.scope_type ?? null,
   };
 
   const notifyPost: OpContext['notifyPost'] = (postCode, scope, input) => {

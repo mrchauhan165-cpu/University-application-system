@@ -1,16 +1,19 @@
 import { useState } from 'react';
-import { Alert, Button, Chip, Field, Modal, Select, StatusChip, TextInput } from '../../components/UI';
+import { Alert, Button, Chip, CopyButton, Field, Modal, Select, StatusChip, TextInput } from '../../components/UI';
 import { Icon } from '../../components/Icons';
 import { useApp } from '../../context';
 import { errorMessage } from '../../../backend/errors';
 import { formatDate, humanise } from '../../lib/format';
-import type { Batch, BatchStatus, Department, Faculty, Section } from '../../../domain/types';
+import type { Batch, BatchStatus, Department, Faculty, Profile, Section } from '../../../domain/types';
 
 type Editor =
   | { kind: 'faculty'; item?: Faculty }
   | { kind: 'department'; item?: Department }
   | { kind: 'batch'; item?: Batch }
   | { kind: 'section'; batch: Batch; item?: Section }
+  | { kind: 'teachers'; department: Department }
+  | { kind: 'teacher'; department: Department }
+  | { kind: 'move'; profile: Profile }
   | null;
 
 export function StructureTab() {
@@ -29,6 +32,23 @@ export function StructureTab() {
     const dept = data.departments.find((d) => d.id === b.department_id);
     return match(b.label, dept?.name);
   });
+
+  const staffOf = (departmentId: string) =>
+    data.profiles
+      .filter((p) => p.kind !== 'student' && p.home_department_id === departmentId && p.status !== 'suspended')
+      .sort((a, b) => a.full_name.localeCompare(b.full_name));
+
+  const [activation, setActivation] = useState<{ name: string; link: string } | null>(null);
+
+  async function inviteTeacher(profile: Profile) {
+    try {
+      const token = await backend.createActivation(profile.id);
+      const link = `${window.location.origin}${window.location.pathname}#/activate?token=${token.token}`;
+      setActivation({ name: profile.full_name, link });
+    } catch (err) {
+      notify(errorMessage(err), 'error');
+    }
+  }
 
   function run(fn: () => void, success: string) {
     try {
@@ -125,7 +145,15 @@ export function StructureTab() {
         <div className="table-wrap">
           <table className="data">
             <thead>
-              <tr><th>Department</th><th>Code</th><th>Faculty</th><th>Batches</th><th>Status</th><th /></tr>
+              <tr>
+                <th>Department</th>
+                <th>Code</th>
+                <th>Faculty</th>
+                <th>Batches</th>
+                <th>Teachers</th>
+                <th>Status</th>
+                <th />
+              </tr>
             </thead>
             <tbody>
               {departments.map((dept) => (
@@ -134,6 +162,31 @@ export function StructureTab() {
                   <td className="mono">{dept.code}</td>
                   <td>{data.faculties.find((f) => f.id === dept.faculty_id)?.name ?? '—'}</td>
                   <td>{data.batches.filter((b) => b.department_id === dept.id).length}</td>
+                  <td>
+                    <div className="teacher-cell">
+                      {(() => {
+                        const staff = staffOf(dept.id);
+                        return (
+                          <>
+                            <button
+                              type="button"
+                              className="teacher-chip"
+                              title={`Show and move the teachers of ${dept.name}`}
+                              onClick={() => setEditor({ kind: 'teachers', department: dept })}
+                            >
+                              <Icon.Users size={12} />
+                              {staff.length ? `${staff.length} ${staff.length === 1 ? 'teacher' : 'teachers'}` : 'No teachers yet'}
+                            </button>
+                            {!dept.archived ? (
+                              <Button size="small" variant="ghost" onClick={() => setEditor({ kind: 'teacher', department: dept })}>
+                                <Icon.Plus size={12} /> Add
+                              </Button>
+                            ) : null}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </td>
                   <td><Chip tone={dept.archived ? 'neutral' : 'success'}>{dept.archived ? 'Archived' : 'Active'}</Chip></td>
                   <td style={{ textAlign: 'right' }}>
                     <div className="row tight" style={{ justifyContent: 'flex-end' }}>
@@ -284,6 +337,65 @@ export function StructureTab() {
         />
       ) : null}
 
+      {editor?.kind === 'teachers' ? (
+        <TeachersModal
+          department={editor.department}
+          onClose={() => setEditor(null)}
+          onAdd={() => setEditor({ kind: 'teacher', department: (editor as { kind: 'teachers'; department: Department }).department })}
+          onMove={(profile) => setEditor({ kind: 'move', profile })}
+        />
+      ) : null}
+
+      {editor?.kind === 'teacher' ? (
+        <TeacherModal
+          department={editor.department}
+          onClose={() => setEditor(null)}
+          onCreated={(profile) => {
+            setEditor(null);
+            notify(`${profile.full_name} added to ${editor.department.name}. Share the invite link to activate the account.`, 'success');
+            void inviteTeacher(profile);
+          }}
+          notify={notify}
+        />
+      ) : null}
+
+      {editor?.kind === 'move' ? (
+        <MoveTeacherModal
+          profile={editor.profile}
+          onClose={() => setEditor(null)}
+          onMoved={(name, department) => {
+            setEditor(null);
+            notify(`${name} is now in ${department}. Everything follows automatically.`, 'success');
+          }}
+          notify={notify}
+        />
+      ) : null}
+
+      {activation ? (
+        <Modal
+          open
+          onClose={() => setActivation(null)}
+          title="Activation link"
+          footer={<Button onClick={() => setActivation(null)}>Done</Button>}
+        >
+          <Alert tone="warn" title="Share privately.">
+            Activation links are single-use and expire quickly. This prototype has no email service, so the link is
+            shown here — copy it and send it to {activation.name}.
+          </Alert>
+          <div style={{ marginTop: 12 }}>
+            <Field label="Link for this teacher" htmlFor="teacher-activation-link">
+              <TextInput id="teacher-activation-link" readOnly value={activation.link} onFocus={(e) => e.currentTarget.select()} />
+            </Field>
+            <div className="row">
+              <CopyButton value={activation.link} />
+              <Button variant="secondary" size="small" onClick={() => window.open(activation.link, '_blank', 'noopener')}>
+                Open link
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      ) : null}
+
       {editor?.kind === 'section' ? (
         <EntityModal
           title={`Add section to ${editor.batch.label}`}
@@ -427,4 +539,221 @@ function BatchModal({
 
 export function BatchStatusChip({ status }: { status: BatchStatus }) {
   return <StatusChip status={status} label={humanise(status)} />;
+}
+
+function TeacherModal({
+  department,
+  onClose,
+  onCreated,
+  notify,
+}: {
+  department: Department;
+  onClose: () => void;
+  onCreated: (profile: Profile) => void;
+  notify: (m: string, t?: 'info' | 'success' | 'error') => void;
+}) {
+  const { data, backend } = useApp();
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [designation, setDesignation] = useState('Assistant Professor');
+  const [phone, setPhone] = useState('');
+  const faculty = data.faculties.find((f) => f.id === department.faculty_id);
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={`Add a teacher to ${department.name}`}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button
+            onClick={() => {
+              try {
+                const result = backend.saveUser({
+                  full_name: fullName,
+                  email,
+                  kind: 'teacher',
+                  department_id: department.id,
+                  designation,
+                  phone,
+                });
+                onCreated(result.profile);
+              } catch (err) {
+                notify(errorMessage(err), 'error');
+              }
+            }}
+          >
+            Add teacher
+          </Button>
+        </>
+      }
+    >
+      <Alert tone="info" title={`${department.name}${faculty ? ` · ${faculty.name}` : ''}`}>
+        The teacher is created in this department straight away. Their account stays “invited” until they open the
+        activation link and set a password.
+      </Alert>
+      <Field label="Full name" htmlFor="t-name" required>
+        <TextInput id="t-name" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Dr. Meera Iyer" />
+      </Field>
+      <Field label="Email address" htmlFor="t-email" required hint="Used to sign in. Must be unique.">
+        <TextInput id="t-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="meera.iyer@demo.university" />
+      </Field>
+      <Field label="Designation" htmlFor="t-designation">
+        <TextInput id="t-designation" value={designation} onChange={(e) => setDesignation(e.target.value)} />
+      </Field>
+      <Field label="Phone (optional)" htmlFor="t-phone">
+        <TextInput id="t-phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+      </Field>
+    </Modal>
+  );
+}
+
+function MoveTeacherModal({
+  profile,
+  onClose,
+  onMoved,
+  notify,
+}: {
+  profile: Profile;
+  onClose: () => void;
+  onMoved: (name: string, department: string) => void;
+  notify: (m: string, t?: 'info' | 'success' | 'error') => void;
+}) {
+  const { data, backend } = useApp();
+  const current = data.departments.find((d) => d.id === profile.home_department_id);
+  const [departmentId, setDepartmentId] = useState('');
+  const [reason, setReason] = useState('');
+  const target = data.departments.find((d) => d.id === departmentId);
+  const posts = data.assignments.filter((a) => a.user_id === profile.id && a.active);
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title={`Move ${profile.full_name}`}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button
+            disabled={!departmentId}
+            onClick={() => {
+              try {
+                backend.changeUserDepartment({ user_id: profile.id, department_id: departmentId, reason: reason || null });
+                onMoved(profile.full_name, target?.name ?? 'the new department');
+              } catch (err) {
+                notify(errorMessage(err), 'error');
+              }
+            }}
+          >
+            Move department
+          </Button>
+        </>
+      }
+    >
+      <Alert tone="info" title={`Currently: ${current?.name ?? 'no department'}`}>
+        The new department is used everywhere immediately — their applications, approvals queue and notices follow the
+        change, and the move is written to the audit trail.
+      </Alert>
+      {posts.length ? (
+        <Alert tone="warn" title="This person holds a post.">
+          A live post keeps its own scope. If the post belongs to the old department, the move is refused until that
+          post is handed over in <strong>Administration → Posts &amp; permissions</strong> — this stops a teacher
+          keeping an old queue after moving.
+        </Alert>
+      ) : null}
+      <Field label="New department" htmlFor="move-dept" required>
+        <Select id="move-dept" value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
+          <option value="">Select a department…</option>
+          {data.faculties
+            .filter((f) => !f.archived)
+            .map((faculty) => {
+              const options = data.departments.filter((d) => d.faculty_id === faculty.id && !d.archived && d.id !== profile.home_department_id);
+              if (!options.length) return null;
+              return (
+                <optgroup key={faculty.id} label={faculty.name}>
+                  {options.map((d) => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </optgroup>
+              );
+            })}
+        </Select>
+      </Field>
+      <Field label="Reason (optional, kept in the audit trail)" htmlFor="move-reason">
+        <TextInput id="move-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Department reorganisation, mutual transfer…" />
+      </Field>
+    </Modal>
+  );
+}
+
+function TeachersModal({
+  department,
+  onClose,
+  onAdd,
+  onMove,
+}: {
+  department: Department;
+  onClose: () => void;
+  onAdd: () => void;
+  onMove: (profile: Profile) => void;
+}) {
+  const { data } = useApp();
+  const [query, setQuery] = useState('');
+  const q = query.trim().toLowerCase();
+  const faculty = data.faculties.find((f) => f.id === department.faculty_id);
+  const staff = data.profiles
+    .filter((p) => p.kind !== 'student' && p.home_department_id === department.id)
+    .filter((p) => !q || `${p.full_name} ${p.designation ?? ''} ${p.user_code}`.toLowerCase().includes(q))
+    .sort((a, b) => a.full_name.localeCompare(b.full_name));
+
+  return (
+    <Modal
+      open
+      wide
+      onClose={onClose}
+      title={`Teachers — ${department.name}`}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>Close</Button>
+          <Button onClick={onAdd}><Icon.Plus size={14} /> Add a teacher</Button>
+        </>
+      }
+    >
+      <Alert tone="info" title={faculty?.name ?? 'Department'}>
+        Everyone whose home department is here. Moving someone updates their queue, notices and profile at once —
+        a live post keeps its own scope, so it must be handed over first.
+      </Alert>
+      <Field label="Find a teacher" htmlFor="teacher-search">
+        <TextInput id="teacher-search" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Name, designation or employee code" />
+      </Field>
+      <div className="table-wrap">
+        <table className="data">
+          <thead>
+            <tr><th>Name</th><th>Code</th><th>Designation</th><th>Account</th><th /></tr>
+          </thead>
+          <tbody>
+            {staff.map((person) => (
+              <tr key={person.id}>
+                <td className="cell-title">{person.full_name}</td>
+                <td className="mono">{person.user_code}</td>
+                <td className="cell-sub">{person.designation ?? '—'}</td>
+                <td><Chip tone={person.status === 'active' ? 'success' : person.status === 'suspended' ? 'danger' : 'neutral'}>{humanise(person.status)}</Chip></td>
+                <td style={{ textAlign: 'right' }}>
+                  <Button size="small" variant="secondary" onClick={() => onMove(person)}>
+                    <Icon.Swap size={13} /> Change department
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {staff.length === 0 ? (
+        <p className="cell-sub" style={{ padding: 12 }}>
+          {q ? `No teacher matches “${query}”.` : 'No teachers in this department yet — use “Add a teacher”.'}
+        </p>
+      ) : null}
+    </Modal>
+  );
 }

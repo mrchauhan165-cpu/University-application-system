@@ -7,7 +7,7 @@ hosted on GitHub Pages, Netlify, S3, nginx, or any other static host.
 
 > **Honest status.** This repository contains a complete, working **prototype**
 > with a browser-side service layer. Every rule described below is enforced in
-> `src/backend` and is covered by automated tests (114 of them at the time of
+> `src/backend` and is covered by automated tests (155 of them at the time of
 > writing). It is **not yet connected to a real database, email service or file
 > store**; see [What is not production-ready](#what-is-not-production-ready).
 > All data in the demo is fictional and labelled as such in the interface.
@@ -21,7 +21,7 @@ Requires **Node.js 20 or newer** (CI and the tests run on Node 22).
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # 117 tests: authorisation, workflow, notices, retention, UI
+npm test           # 155 tests: authorisation, workflow, notices, retention, UI
 npm run build      # typecheck + static build into dist/
 npm run preview:dist   # serve the built site on :5173, exactly as a host would
 ```
@@ -60,6 +60,11 @@ demoing.
 
 Password for all of the above: **`Demo@12345`**
 
+Dean, Registrar, PVC, VC and Chancellor are **approve-only** accounts: sign in as
+one of them and the "New Application" entry disappears, and the server refuses a
+submit attempt even if it is replayed by hand. Use a student, teacher, mentor or
+HOD account to raise an application.
+
 ---
 
 ## What works
@@ -84,16 +89,30 @@ Password for all of the above: **`Demo@12345`**
 - Permissions are separate dimensions: submit, view, act, view documents,
   statistics, publish notices, university-wide notices, manage users, configure
   workflows, manage retention, view audit, confidential access.
+- **Approve-only senior posts.** Dean, Registrar, PVC, VC and Chancellor ship
+  *without* the submit permission: they take decisions but can never raise an
+  application. The rule lives in the backend (`SessionUser.canSubmit` and the
+  submit guard in `ops/applications.ts`), so hiding the buttons is cosmetic.
+  An administrator can grant submit back to a post if a university wants it.
 - Assignments have start/end dates and full history. Ending an assignment
   revokes **only that assignment**: the person keeps their other posts, loses the
   old post's queue, history, notices and file links immediately, and the next
   holder sees the same history with the original actor names preserved.
 - Being senior is not enough: the system administrator and auditor can see the
   audit log but not application contents.
+- Teachers are added per department from **Administration → Organisation →
+  Departments** (Teachers column) and can be moved to another department in one
+  action; profile, queue and notices follow and the change is audited. A move is
+  refused while the person still holds a live post in the old department, because
+  that post carries the access.
 
 **Applications and approvals**
 - Configurable types: who may apply, fields, required documents, confidentiality,
   withdrawal, retention category, extra viewer posts, fallback approver.
+- Six default types, including **Other request** — the applicant writes their own
+  subject and details (optional attachment) for anything without a standard form.
+  Students route mentor → HOD; staff have no section, so the mentor stage is not
+  applicable and routing moves straight to the HOD.
 - Drafts, validation with per-field messages, unique reference numbers, own-records
   visibility, correction and resubmission after a return.
 - Actions: approve, reject (reason required), return for correction (remarks
@@ -176,8 +195,10 @@ src/backend/__tests__/workflow.test.ts        routes, VC stage, remarks, documen
 src/backend/__tests__/notices-stats.test.ts   notice scopes, read receipts, statistics scope
 src/backend/__tests__/admin-retention.test.ts structure, accounts, retention gates
 src/backend/__tests__/edge-cases.test.ts      confidential access, notification dedupe, scheduled notices, passwords
+src/backend/__tests__/requests.test.ts        approve-only posts, free-text requests, department transfers
 src/ui/__tests__/render.test.tsx              every role and every admin tab renders
 src/ui/__tests__/flows.test.tsx               submit → approve → applicant view, revoked access
+src/ui/__tests__/teacher-admin.test.tsx       add teacher, move department, blocked-by-live-post
 ```
 
 Run them with `npm test`. UI tests use jsdom, so no browser download is needed.

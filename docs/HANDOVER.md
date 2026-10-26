@@ -106,15 +106,27 @@ sub-folder, set `VITE_BASE_PATH=/that-folder/` before building.
    a set of permissions plus a scope (university / faculty / department / batch /
    section). You can create posts above the VC.
 3. **Administration → Users**: create people. Students need a batch **and** a
-   section. Each person gets a permanent code (`STU0001`).
+   section. Each person gets a permanent code (`STU0001`). Teachers can also be
+   added straight from **Organisation → Departments → Teachers → Add**, which puts
+   them in that department and hands you the activation link.
 4. **Administration → Post assignments**: give people their posts with an
    effective date. One person may hold several posts.
 5. Send each new person their **activation link** (Users tab → *Activation link*).
    They choose their own password; you never see it.
+6. Moving a teacher: **Organisation → Departments → Teachers** → pick the person →
+   *Change department*. The change is audited and visible everywhere at once. If
+   they still hold a live post in the old department the move is refused — end or
+   replace that assignment first (Administration → Post assignments), otherwise
+   they would keep approving for the old department.
+7. Dean, Registrar, PVC, VC and Chancellor are **approve-only** in the seed: they
+   have no *submit* permission, so they cannot raise an application themselves.
+   Add the permission to a post only if your university really wants that.
 
 ### 2. Configure what can be applied for
 
 1. **Administration → Application types** → *New type*: name, who may apply,
+   (the seeded **Other request** type shows the free-text pattern: a subject, a
+   details box and one optional attachment),
    fields, required documents, whether it is confidential, whether drafts and
    withdrawal are allowed, the retention category, and a fallback approver.
 2. **Administration → Workflows** → choose the type → *Create/Edit route*: add the
