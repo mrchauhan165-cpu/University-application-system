@@ -483,7 +483,66 @@ legend { padding: 0 6px; font-size: 0.8rem; font-weight: 700; color: var(--ink-2
   position: fixed; inset: 0; background: rgba(9, 22, 41, 0.45); z-index: 39; display: none;
 }
 
+/* ---------------------------------------------- new application chooser/form */
+.type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+.type-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.type-card:hover { border-color: var(--blue-100); box-shadow: 0 6px 18px rgba(15, 37, 69, 0.08); }
+.type-card:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.type-card-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.type-card-top strong { flex: 1; min-width: 120px; font-size: 0.92rem; }
+.type-card p { margin: 0; font-size: 0.83rem; color: var(--muted); line-height: 1.55; }
+.type-card-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 0.75rem; color: var(--muted); margin-top: auto; }
+.type-icon {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--blue-50);
+  color: var(--blue);
+}
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.doc-upload {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.req { color: var(--danger); }
+.mb { margin-bottom: 16px; }
+
 @media (max-width: 1080px) {
+  .split { grid-template-columns: minmax(0, 1fr); }
   .grid.cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .grid.cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
