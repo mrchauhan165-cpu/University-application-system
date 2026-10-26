@@ -106,11 +106,28 @@ export function SettingsTab() {
       </Card>
 
       <Card>
-        <CardHeader title="Data set" subtitle="Prototype storage is this browser’s local storage." />
+        <CardHeader title="Where the data lives" subtitle="This prototype keeps everything in this browser. It does not talk to a server." />
         <div className="card-pad stack">
-          <Alert tone="info" title={`${(storageBytes / 1024).toFixed(0)} KB used of roughly 4 MB available.`}>
-            Attachments are limited to keep the demo portable. A production deployment stores files in private object
-            storage instead.
+          <dl className="kv">
+            <dt>Storage</dt>
+            <dd>
+              {backend.storageMode === 'browser'
+                ? 'This browser’s local storage'
+                : 'Memory only — this browser is blocking local storage, so a reload resets everything'}
+            </dd>
+            <dt>Data key</dt>
+            <dd><span className="mono">uas.v1.state</span> — the whole data set plus salted password hashes</dd>
+            <dt>Session key</dt>
+            <dd><span className="mono">uas.v1.session</span> — user id and a 12-hour expiry</dd>
+            <dt>Used</dt>
+            <dd>{backend.storageMode === 'browser' ? `${(storageBytes / 1024).toFixed(0)} KB of roughly 4 MB` : '—'}</dd>
+            <dt>Cloud database</dt>
+            <dd>Not connected. Schema and row-level-security drafts are in <span className="mono">supabase/migrations</span>.</dd>
+          </dl>
+          <Alert tone="info" title="Per device, per browser.">
+            Signing in from another phone or laptop shows that browser’s own copy of the demo data. Use Export below to
+            move a data set between devices. Passwords are stored only as salted hashes; attachments are kept small so
+            the demo stays portable.
           </Alert>
           <div className="row">
             <Button variant="secondary" onClick={exportData}>
