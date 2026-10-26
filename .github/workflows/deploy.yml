@@ -22,6 +22,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      pages_enabled: ${{ steps.pages_check.outputs.enabled }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,19 +52,33 @@ jobs:
         if: failure()
         run: node scripts/annotate-failures.mjs vitest.log
 
-      - name: Configure Pages
+      - name: Check whether Pages is enabled
+        id: pages_check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Creating a Pages site needs repository *admin* rights, which the
+          # workflow token does not have. Enabling Pages is a one-time click for
+          # the repository owner: Settings -> Pages -> Source: GitHub Actions.
+          if gh api "repos/${GITHUB_REPOSITORY}/pages" >/dev/null 2>&1; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::GitHub Pages is not enabled for this repository. Build and tests ran normally; deployment is skipped. Enable it once: Settings -> Pages -> Build and deployment -> Source: GitHub Actions."
+          fi
+
+      - name: Resolve base path
         id: pages
+        if: steps.pages_check.outputs.enabled == 'true'
         uses: actions/configure-pages@v5
-        with:
-          # Turns Pages on with the workflow build type if it is not enabled yet,
-          # so no manual Settings toggle is needed. Requires pages: write (above).
-          enablement: true
 
       - name: Build static site
         # Base path comes from Pages itself (/<repo>/ for project sites, / for user
         # sites and custom domains). BASE_PATH can override it (Settings → Variables).
         env:
-          VITE_BASE_PATH: ${{ vars.BASE_PATH || format('{0}/', steps.pages.outputs.base_path) }}
+          # Pages' own base path when available, otherwise the project-site
+          # default. BASE_PATH (repository variable) always wins.
+          VITE_BASE_PATH: ${{ vars.BASE_PATH || (steps.pages.outputs.base_path != '' && format('{0}/', steps.pages.outputs.base_path)) || format('/{0}/', github.event.repository.name) }}
         run: npm run build
 
       - name: Make sure no source maps or secrets ship
@@ -77,20 +93,29 @@ jobs:
       - name: Workflow summary
         run: |
           {
-            echo "### Deployed ${GITHUB_REF_NAME}"
+            echo "### Verified build: ${GITHUB_REF_NAME}"
             echo ""
-            echo "Commit: ${GITHUB_SHA:0:7}"
+            echo "Commit: \`${GITHUB_SHA:0:7}\`"
             echo ""
-            echo "Site: ${{ steps.pages.outputs.base_url }}/"
+            if [ "${{ steps.pages_check.outputs.enabled }}" = "true" ]; then
+              echo "Deployed to: ${{ steps.pages.outputs.base_url }}/"
+            else
+              echo "Build, typecheck and all tests passed. **Deployment was skipped because GitHub Pages is not enabled yet.**"
+              echo ""
+              echo "Enable it once (repository owner): **Settings → Pages → Build and deployment → Source: GitHub Actions**, then re-run this workflow."
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Pages artifact
+        if: steps.pages_check.outputs.enabled == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
 
   deploy:
     needs: build
+    # Skipped (not failed) until Pages is switched on for the repository.
+    if: needs.build.outputs.pages_enabled == 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
