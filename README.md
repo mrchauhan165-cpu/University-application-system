@@ -21,7 +21,7 @@ Requires **Node.js 20 or newer** (CI and the tests run on Node 22).
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # 114 tests: authorisation, workflow, notices, retention, UI
+npm test           # 117 tests: authorisation, workflow, notices, retention, UI
 npm run build      # typecheck + static build into dist/
 npm run preview:dist   # serve the built site on :5173, exactly as a host would
 ```
@@ -30,27 +30,35 @@ npm run preview:dist   # serve the built site on :5173, exactly as a host would
 > detects that, keeps working from memory and shows a small "data is not saved"
 > notice instead of failing to load.
 
-Sign in with any demo account below. The password for every demo account is
-`Demo@12345` (shown on the sign-in screen; it is demo data, not a credential).
+Sign in with any demo account below. Every demo account uses the password
+`Demo@12345`. These are seeded test accounts, not real credentials: the sign-in
+screen deliberately does not display them, so keep this table to yourself when
+demoing.
 
-| Account | Role | Useful for |
-| --- | --- | --- |
-| `student.a@demo.university` | Student (section A) | submitting, own records, tracking |
-| `student.b@demo.university` | Student (section A) | confidential grievance |
-| `student.c@demo.university` | Student (section B) | section-scoped visibility |
-| `teacher@demo.university` | Staff, no post | staff claim, no approvals |
-| `mentor.a@demo.university` | Mentor, section A | first approval stage |
-| `mentor.b@demo.university` | Mentor, section B | parallel section |
-| `hod.cse@demo.university` | Head of Department (CSE) | department queue, statistics |
-| `dean.eng@demo.university` | Dean, Engineering | faculty statistics |
-| `registrar@demo.university` | Registrar | university-wide officer |
-| `pvc@demo.university` | Pro-Vice-Chancellor | senior approval |
-| `vc@demo.university` | Vice-Chancellor | "Approve and forward" vs finalise |
-| `chancellor@demo.university` | Chancellor (custom post above VC) | final authority above the VC |
-| `wfadmin@demo.university` | Workflow Administrator | types, workflows, retention |
-| `sysadmin@demo.university` | System Administrator | structure, accounts, settings |
-| `auditor@demo.university` | Compliance Auditor | audit log, no application contents |
-| `former.hod@demo.university` | Former HOD (assignment ended) | proof that history access is revoked |
+| Account | Code | Role / post | Useful for |
+| --- | --- | --- | --- |
+| `student.a@demo.university` | STU0001 | Student, CSE · section A | submitting, own records, tracking |
+| `student.b@demo.university` | STU0002 | Student, CSE · section A | confidential grievance |
+| `student.c@demo.university` | STU0003 | Student, CSE · section B | section-scoped visibility |
+| `student.ece@demo.university` | STU0004 | Student, ECE · section A | another department |
+| `teacher@demo.university` | FAC0004 | Staff, no post | staff claim, no approvals |
+| `mentor.a@demo.university` | FAC0001 | Mentor, CSE section A | first approval stage |
+| `mentor.b@demo.university` | FAC0002 | Mentor, CSE section B | parallel section |
+| `mentor.ece@demo.university` | FAC0003 | Mentor, ECE section A | parallel department |
+| `hod.cse@demo.university` | HOD0001 | Head of Department (CSE) | department queue, statistics |
+| `hod.ece@demo.university` | HOD0002 | Head of Department (ECE) | separate department scope |
+| `dean.eng@demo.university` | DEAN0001 | Dean, Engineering & Technology | faculty statistics |
+| `dean.sci@demo.university` | DEAN0002 | Dean, Basic & Applied Sciences | second faculty |
+| `registrar@demo.university` | REG0001 | Registrar | university-wide officer |
+| `pvc@demo.university` | PVC0001 | Pro-Vice-Chancellor | senior approval |
+| `vc@demo.university` | VC0001 | Vice-Chancellor | "Approve and forward" vs finalise |
+| `chancellor@demo.university` | CHN0001 | Chancellor (custom post above VC) | final authority above the VC |
+| `wfadmin@demo.university` | ADM0001 | Workflow Administrator | types, workflows, retention |
+| `sysadmin@demo.university` | SYS0001 | System Administrator | structure, accounts, settings |
+| `auditor@demo.university` | AUD0001 | Compliance Auditor | audit log, no application contents |
+| `former.hod@demo.university` | FAC0005 | Former HOD (assignment ended) | proof that history access is revoked |
+
+Password for all of the above: **`Demo@12345`**
 
 ---
 
@@ -65,6 +73,9 @@ Sign in with any demo account below. The password for every demo account is
 - Invitation → activation with single-use expiring links; no default or plaintext
   passwords (salted PBKDF2-style hashing in demo, GoTrue in production);
   five-failure lockout; session expiry and revocation; audited account changes.
+- Students self-serve **only** their username (sign-in email) and password, both
+  confirmed with the current password and recorded in the audit log. Name,
+  department, batch, section and roll number stay administrator-managed.
 
 **Posts, permissions and scope**
 - Posts are data, not code. Any number of custom posts can be created, including

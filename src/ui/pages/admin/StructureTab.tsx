@@ -16,6 +16,19 @@ type Editor =
 export function StructureTab() {
   const { data, backend, notify } = useApp();
   const [editor, setEditor] = useState<Editor>(null);
+  const [query, setQuery] = useState('');
+  const q = query.trim().toLowerCase();
+  const match = (...values: (string | null | undefined)[]) =>
+    !q || values.some((v) => (v ?? '').toLowerCase().includes(q));
+  const faculties = data.faculties.filter((f) => match(f.name, f.code));
+  const departments = data.departments.filter((d) => {
+    const faculty = data.faculties.find((f) => f.id === d.faculty_id);
+    return match(d.name, d.code, faculty?.name);
+  });
+  const batches = data.batches.filter((b) => {
+    const dept = data.departments.find((d) => d.id === b.department_id);
+    return match(b.label, dept?.name);
+  });
 
   function run(fn: () => void, success: string) {
     try {
@@ -29,14 +42,34 @@ export function StructureTab() {
 
   return (
     <div className="stack">
-      <Alert tone="info" title="No semester setup.">
-        The academic hierarchy is faculty → department → batch → section. New batches are independent; archiving one
-        never changes another.
+      <Alert tone="info" title="Defaults are fully editable.">
+        SGT University’s 19 faculties are pre-loaded as a starting point. Rename, add or archive any of them — nothing
+        here is fixed. The academic hierarchy is faculty → department → batch → section, with no semester step.
       </Alert>
+
+      <div className="filter-bar">
+        <Field label="Find a faculty, department or batch" htmlFor="structure-search">
+          <TextInput
+            id="structure-search"
+            type="search"
+            placeholder="Type a name or code, e.g. Law, AYUR, CSE 2024"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </Field>
+        {q ? (
+          <p className="cell-sub">
+            Showing {faculties.length} of {data.faculties.length} faculties and {departments.length} of{' '}
+            {data.departments.length} departments.
+          </p>
+        ) : null}
+      </div>
 
       <section>
         <div className="row" style={{ marginBottom: 10 }}>
-          <h3 style={{ flex: 1 }}>Faculties</h3>
+          <h3 style={{ flex: 1 }}>
+            Faculties <span className="cell-sub">({data.faculties.length})</span>
+          </h3>
           <Button size="small" onClick={() => setEditor({ kind: 'faculty' })}>
             <Icon.Plus size={14} /> Add faculty
           </Button>
@@ -47,7 +80,7 @@ export function StructureTab() {
               <tr><th>Faculty</th><th>Code</th><th>Departments</th><th>Status</th><th /></tr>
             </thead>
             <tbody>
-              {data.faculties.map((faculty) => (
+              {faculties.map((faculty) => (
                 <tr key={faculty.id}>
                   <td className="cell-title">{faculty.name}</td>
                   <td className="mono">{faculty.code}</td>
@@ -76,12 +109,15 @@ export function StructureTab() {
               ))}
             </tbody>
           </table>
+          {faculties.length === 0 ? <p className="cell-sub" style={{ padding: 14 }}>No faculty matches “{query}”.</p> : null}
         </div>
       </section>
 
       <section>
         <div className="row" style={{ marginBottom: 10 }}>
-          <h3 style={{ flex: 1 }}>Departments</h3>
+          <h3 style={{ flex: 1 }}>
+            Departments <span className="cell-sub">({data.departments.length})</span>
+          </h3>
           <Button size="small" onClick={() => setEditor({ kind: 'department' })} disabled={!data.faculties.length}>
             <Icon.Plus size={14} /> Add department
           </Button>
@@ -92,7 +128,7 @@ export function StructureTab() {
               <tr><th>Department</th><th>Code</th><th>Faculty</th><th>Batches</th><th>Status</th><th /></tr>
             </thead>
             <tbody>
-              {data.departments.map((dept) => (
+              {departments.map((dept) => (
                 <tr key={dept.id}>
                   <td className="cell-title">{dept.name}</td>
                   <td className="mono">{dept.code}</td>
@@ -125,7 +161,9 @@ export function StructureTab() {
 
       <section>
         <div className="row" style={{ marginBottom: 10 }}>
-          <h3 style={{ flex: 1 }}>Batches</h3>
+          <h3 style={{ flex: 1 }}>
+            Batches <span className="cell-sub">({data.batches.length})</span>
+          </h3>
           <Button size="small" onClick={() => setEditor({ kind: 'batch' })} disabled={!data.departments.length}>
             <Icon.Plus size={14} /> Add batch
           </Button>
@@ -136,7 +174,7 @@ export function StructureTab() {
               <tr><th>Batch</th><th>Department</th><th>Years</th><th>Sections</th><th>Retention</th><th>Status</th><th /></tr>
             </thead>
             <tbody>
-              {data.batches.map((batch) => {
+              {batches.map((batch) => {
                 const sections = data.sections.filter((s) => s.batch_id === batch.id);
                 return (
                   <tr key={batch.id}>

@@ -4,6 +4,10 @@ import { useApp } from '../context';
 
 const FAQ = [
   {
+    q: 'How is the organisation set up, and can I change it?',
+    a: 'The hierarchy is University → Faculty → Department → Batch → Section → Students, with mentors attached to sections and no semester step. SGT University’s 19 faculties (Medicine, Dental Sciences, Ayurveda, Nursing, Pharmacy, Allied Health, Physiotherapy, Naturopathy, Behavioural Sciences, Agriculture, Basic & Applied Sciences, Engineering & Technology, Commerce & Management, Law, Education, Design, Hotel & Tourism, Emerging Media, Humanities) are pre-loaded as editable defaults — an administrator can rename, add or archive any of them under Administration → Organisation.',
+  },
+  {
     q: 'Who can see my application?',
     a: 'You always see your own applications. Officers see an application only while it is at their stage, or after it has passed through their post — and only within the post’s organisational scope. Former post holders lose access immediately when their assignment ends.',
   },

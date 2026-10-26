@@ -20,8 +20,21 @@ You need a computer with [Node.js 20 or newer](https://nodejs.org) installed.
 2. Type `npm install` and press Enter. Wait for it to finish (about a minute).
 3. Type `npm run dev` and press Enter.
 4. Open the address printed in the terminal (usually `http://localhost:5173`).
-5. On the sign-in screen, open **“Demo accounts”**, tap an account to fill the
-   form, and press **Sign in**.
+5. Type one of the demo usernames below and the password **`Demo@12345`**, then
+   press **Sign in**. (The sign-in screen no longer lists demo accounts.)
+
+| Username | Shows |
+| --- | --- |
+| `student.a@demo.university` | a student: own applications only |
+| `mentor.a@demo.university` | first approval stage |
+| `hod.cse@demo.university` | department queue and statistics |
+| `vc@demo.university` | “Approve and forward” vs finalise |
+| `sysadmin@demo.university` | structure, accounts, settings |
+
+Every seeded account (students, mentors, HODs, deans, registrar, PVC, VC,
+Chancellor, both administrators, auditor) uses the same demo password
+`Demo@12345`. A student may change only their own username and password from
+**Profile**; everything else is administrator-managed.
 
 Try these four minutes of demonstration:
 

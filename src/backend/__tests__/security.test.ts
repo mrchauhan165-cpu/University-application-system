@@ -35,6 +35,39 @@ describe('authentication', () => {
     expect(signed.user.profile.status).toBe('active');
   });
 
+  it('a student can change their own username, and the old one stops working', async () => {
+    const be = await asUser(EMAILS.studentA);
+    await be.changeUsername('aarav.new@demo.university', DEMO_PASSWORD);
+    expect(be.getSession()!.profile.email).toBe('aarav.new@demo.university');
+    expect(be.peek().profiles.find((p) => p.id === be.getSession()!.profile.id)?.email).toBe(
+      'aarav.new@demo.university',
+    );
+    be.signOut();
+    await expectRejects(be.signIn(EMAILS.studentA, DEMO_PASSWORD), 'invalid_credentials');
+    const signed = await be.signIn('aarav.new@demo.university', DEMO_PASSWORD);
+    expect(signed.user.profile.user_code).toBe('STU0001');
+    const audit = be.peek().audit.find((a) => a.action === 'user.username_change');
+    expect(audit?.meta).toMatchObject({ before: EMAILS.studentA, after: 'aarav.new@demo.university' });
+  });
+
+  it('rejects a username change with a wrong password, a taken username or an invalid address', async () => {
+    const be = await asUser(EMAILS.studentA);
+    await expectRejects(be.changeUsername('aarav.other@demo.university', 'WrongPass#123'), 'invalid_credentials');
+    await expectRejects(be.changeUsername(EMAILS.studentB, DEMO_PASSWORD), 'conflict');
+    await expectRejects(be.changeUsername('not-an-email', DEMO_PASSWORD), 'validation');
+    await expectRejects(be.changeUsername(EMAILS.studentA, DEMO_PASSWORD), 'validation');
+    expect(be.getSession()!.profile.email).toBe(EMAILS.studentA);
+  });
+
+  it('staff cannot change their own username, and nobody can change another profile', async () => {
+    const teacher = await asUser(EMAILS.teacher);
+    await expectRejects(teacher.changeUsername('teacher.new@demo.university', DEMO_PASSWORD), 'forbidden');
+    const student = await asUser(EMAILS.studentA);
+    await expectRejects(student.changeUsername(EMAILS.studentB, `x#${'Yz9'.repeat(4)}`), 'invalid_credentials');
+    expect(student.peek().profiles.find((p) => p.email === EMAILS.studentB)).toBeTruthy();
+    expect(student.peek().profiles.find((p) => p.email === EMAILS.studentA)).toBeTruthy();
+  });
+
   it('never exposes existing passwords through the data set', async () => {
     const be = await signInAs(makeBackend(), EMAILS.sysadmin);
     const exported = be.exportState();
@@ -175,7 +208,7 @@ describe('post handover and history', () => {
     }
     const historyApp = historyPost[0].application_id;
     const shown = newHodView.actions.filter((a) => a.application_id === historyApp && a.post_code === 'HOD');
-    expect(shown.some((a) => a.actor_name.includes('Head CSE'))).toBe(true);
+    expect(shown.some((a) => a.actor_name.includes('Gita Menon'))).toBe(true);
 
     // the replaced holder lost the post and its history
     await signInAs(be, EMAILS.hodCse);

@@ -176,3 +176,80 @@ export function countBy<T>(items: T[], key: (t: T) => string): { key: string; co
   for (const item of items) map.set(key(item), (map.get(key(item)) ?? 0) + 1);
   return [...map.entries()].map(([k, count]) => ({ key: k, count })).sort((a, b) => b.count - a.count);
 }
+
+/* ------------------------------------------------------------ route progress */
+
+export type StepState = 'done' | 'current' | 'attention' | 'upcoming';
+
+export interface RouteStep {
+  key: string;
+  /** stage name shown to the reader, e.g. "Mentor review" */
+  label: string;
+  /** post that holds this stage, e.g. "Mentor" */
+  post: string;
+  state: StepState;
+  /** who acted and when, when the stage has been decided */
+  actor?: string;
+  /** short state word for screen readers and captions */
+  caption: string;
+}
+
+const DECIDING_ACTIONS = ['approve', 'approve_forward', 'finalise', 'reject', 'return', 'clarify', 'system_skip'];
+
+/**
+ * The approval route of one application, expressed as steps for the status view
+ * and the dashboard progress dots. Derived only from stored state — no guessing:
+ * a stage counts as decided when an action was recorded against its post.
+ */
+export function applicationSteps(data: AppData, app: Application): RouteStep[] {
+  const workflow = workflowOf(data, app);
+  if (!workflow) return [];
+
+  const closed = app.status === 'completed' || app.status === 'withdrawn';
+  const rejected = app.status === 'rejected';
+  const acts = data.actions.filter((a) => a.application_id === app.id);
+
+  const steps: RouteStep[] = workflow.stages.map((stage, index) => {
+    const decision = [...acts]
+      .reverse()
+      .find((a) => a.post_code === stage.post_code && DECIDING_ACTIONS.includes(a.action));
+    const done = closed || index < app.stage_index;
+    const isCurrent = !closed && !rejected && app.stage_index === index && app.current_post === stage.post_code;
+
+    let state: StepState = done ? 'done' : isCurrent ? 'current' : 'upcoming';
+    let caption = done ? 'Completed' : isCurrent ? 'Awaiting decision' : 'Not reached yet';
+    if (isCurrent && app.status === 'returned') {
+      state = 'attention';
+      caption = 'Returned for correction';
+    }
+    if (rejected && app.stage_index === index) {
+      state = 'attention';
+      caption = 'Rejected here';
+    }
+
+    return {
+      key: stage.key,
+      label: stage.label || postName(data, stage.post_code),
+      post: postName(data, stage.post_code),
+      state,
+      actor: decision ? `${decision.actor_name} · ${decision.post_name ?? postName(data, decision.post_code)}` : undefined,
+      caption,
+    };
+  });
+
+  if (workflow.beyond_final) {
+    const beyond = workflow.beyond_final;
+    const decision = [...acts].reverse().find((a) => a.post_code === beyond.post_code && DECIDING_ACTIONS.includes(a.action));
+    const isCurrent = app.beyond_active || (app.status === 'further_pending' && app.current_post === beyond.post_code);
+    steps.push({
+      key: 'beyond_final',
+      label: beyond.label,
+      post: postName(data, beyond.post_code),
+      state: app.beyond_done ? 'done' : isCurrent ? 'current' : 'upcoming',
+      actor: decision ? `${decision.actor_name} · ${decision.post_name ?? postName(data, decision.post_code)}` : undefined,
+      caption: app.beyond_done ? 'Completed' : isCurrent ? 'Awaiting decision' : 'Not reached yet',
+    });
+  }
+
+  return steps;
+}

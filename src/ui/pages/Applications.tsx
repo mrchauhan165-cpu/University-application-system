@@ -13,7 +13,8 @@ import {
 } from '../components/UI';
 import { useApp, useSession } from '../context';
 import { formatDate, fromNow } from '../lib/format';
-import { applicationOrgText, myApplications, typeName } from '../lib/selectors';
+import { applicationOrgText, applicationSteps, myApplications, typeName } from '../lib/selectors';
+import { ProgressDots } from '../components/Progress';
 import { STATUS_LABEL, type AppStatus } from '../../domain/types';
 
 const STATUS_FILTERS: { value: string; label: string; match: (s: AppStatus) => boolean }[] = [
@@ -49,6 +50,8 @@ export function ApplicationsPage() {
     });
   }, [mine, filter, typeId, query, data]);
 
+  const filterCounts = STATUS_FILTERS.map((f) => ({ ...f, count: mine.filter((a) => f.match(a.status)).length }));
+
   const availableTypes = data.applicationTypes.filter(
     (t) => t.active && t.applicant_kinds.includes(session.profile.kind),
   );
@@ -71,31 +74,40 @@ export function ApplicationsPage() {
       <Card>
         <CardHeader title={`${rows.length} application${rows.length === 1 ? '' : 's'}`} subtitle="Only your own records are ever returned by the server." />
         <div className="card-pad">
-          <div className="filters" style={{ marginBottom: 14 }}>
-            <Field label="Search" htmlFor="app-search" className="grow">
-              <TextInput
-                id="app-search"
-                type="search"
-                placeholder="Reference number or type"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </Field>
-            <Field label="Status" htmlFor="status-filter">
-              <Select id="status-filter" value={status} onChange={(e) => setStatus(e.target.value)}>
-                {STATUS_FILTERS.map((f) => (
-                  <option key={f.value} value={f.value}>{f.label}</option>
-                ))}
-              </Select>
-            </Field>
-            <Field label="Application type" htmlFor="type-filter">
-              <Select id="type-filter" value={typeId} onChange={(e) => setTypeId(e.target.value)}>
-                <option value="">All types</option>
-                {data.applicationTypes.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </Select>
-            </Field>
+          <div className="filter-bar">
+            <div className="segmented" role="group" aria-label="Filter by status">
+              {filterCounts.map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  className={`seg ${status === f.value ? 'is-active' : ''}`}
+                  aria-pressed={status === f.value}
+                  onClick={() => setStatus(f.value)}
+                >
+                  {f.label}
+                  <span className="seg-count">{f.count}</span>
+                </button>
+              ))}
+            </div>
+            <div className="filters">
+              <Field label="Search" htmlFor="app-search" className="grow">
+                <TextInput
+                  id="app-search"
+                  type="search"
+                  placeholder="Reference number or type"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </Field>
+              <Field label="Application type" htmlFor="type-filter">
+                <Select id="type-filter" value={typeId} onChange={(e) => setTypeId(e.target.value)}>
+                  <option value="">All types</option>
+                  {data.applicationTypes.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
           </div>
 
           {rows.length === 0 ? (
@@ -138,7 +150,10 @@ export function ApplicationsPage() {
                       <td data-label="Submitted">{app.submitted_at ? formatDate(app.submitted_at) : 'Not submitted'}</td>
                       <td data-label="Last update">{fromNow(app.updated_at)}</td>
                       <td data-label="Status">
-                        <StatusChip status={app.status} label={STATUS_LABEL[app.status]} />
+                        <div className="row tight">
+                          <StatusChip status={app.status} label={STATUS_LABEL[app.status]} />
+                          <ProgressDots steps={applicationSteps(data, app)} />
+                        </div>
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <Button size="small" variant="secondary" onClick={() => { window.location.hash = `#/applications/${app.id}`; }}>

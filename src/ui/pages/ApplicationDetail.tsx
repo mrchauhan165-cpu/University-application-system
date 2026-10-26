@@ -6,7 +6,6 @@ import {
   Card,
   CardHeader,
   Chip,
-  Descriptions,
   EmptyState,
   Field,
   Modal,
@@ -16,10 +15,12 @@ import {
   TextArea,
 } from '../components/UI';
 import { useApp, useSession, navigate } from '../context';
+import { StageStepper, StatusHero } from '../components/Progress';
 import { ApiError, errorMessage } from '../../backend/errors';
-import { bytes, formatDate, formatDateTime, fromNow, humanise } from '../lib/format';
+import { bytes, formatDate, formatDateTime, fromNow, humanise, initialLetters } from '../lib/format';
 import {
   applicationOrgText,
+  applicationSteps,
   canActOn,
   postName,
   workflowOf,
@@ -132,6 +133,8 @@ export function ApplicationDetailPage({ appId }: { appId: string }) {
   const events = data.statusEvents
     .filter((e) => e.application_id === app.id)
     .sort((a, b) => (a.created_at > b.created_at ? 1 : -1));
+  const steps = applicationSteps(data, app);
+  const nextPost = app.current_post ? postName(data, app.current_post) : null;
 
   return (
     <>
@@ -139,8 +142,7 @@ export function ApplicationDetailPage({ appId }: { appId: string }) {
         title={type?.name ?? 'Application'}
         subtitle={
           <span>
-            <span className="mono">{app.reference}</span> · submitted {app.submitted_at ? formatDateTime(app.submitted_at) : 'not yet'}
-            {app.confidential ? ' · confidential' : ''}
+            <span className="mono">{app.reference}</span> · {applicationOrgText(data, app)}
           </span>
         }
         breadcrumbs={[
@@ -168,43 +170,56 @@ export function ApplicationDetailPage({ appId }: { appId: string }) {
         }
       />
 
-      {app.status === 'further_pending' ? (
-        <div style={{ marginBottom: 16 }}>
-          <Alert tone="warn" title="Approved by the VC — further approval pending.">
-            This application is <strong>not</strong> finally approved. It is with{' '}
-            {postName(data, app.current_post)} for completion.
-          </Alert>
-        </div>
-      ) : null}
+      <StatusHero
+        app={app}
+        data={data}
+        steps={steps}
+        actions={
+          isApplicant && app.status === 'returned' ? (
+            <Button onClick={() => setEditOpen(true)}>
+              <Icon.Undo size={15} /> Correct &amp; resubmit
+            </Button>
+          ) : canAct ? (
+            <Button onClick={() => setActionOpen(true)}>
+              <Icon.Shield size={15} /> Take action
+            </Button>
+          ) : isApplicant && app.status === 'draft' ? (
+            <Button onClick={() => setEditOpen(true)}>Continue editing</Button>
+          ) : undefined
+        }
+      />
 
-      {app.status === 'completed' && app.vc_approved ? (
-        <div style={{ marginBottom: 16 }}>
-          <Alert tone="success" title="Finally completed.">
-            The Vice-Chancellor approved this application and the configured higher authority has completed the
-            process.
-          </Alert>
-        </div>
-      ) : null}
+      <div className="fact-strip">
+        <Fact label="Applicant" value={`${app.applicant_name} (${app.applicant_code})`} />
+        <Fact label="Organisation" value={applicationOrgText(data, app)} />
+        <Fact label="Current stage" value={nextPost ?? 'Closed'} />
+        <Fact label="Submitted" value={app.submitted_at ? formatDate(app.submitted_at) : 'Not submitted'} />
+        <Fact label="Last update" value={fromNow(app.updated_at)} />
+      </div>
 
       <div className="grid cols-2" style={{ alignItems: 'start' }}>
         <div className="stack">
           <Card>
-            <CardHeader title="Application" actions={app.confidential ? <Chip tone="gold">Confidential</Chip> : null} />
+            <CardHeader
+              title="Approval route"
+              subtitle={workflow ? `Workflow version ${workflow.version} · fixed when the application was submitted` : 'Unavailable'}
+              actions={
+                <>
+                  {app.confidential ? <Chip tone="gold">Confidential</Chip> : null}
+                  <Chip tone={app.retention_category === 'standard' ? 'neutral' : 'warn'}>
+                    {humanise(app.retention_category)} retention
+                  </Chip>
+                </>
+              }
+            />
             <div className="card-pad">
-              <Descriptions
-                items={[
-                  { label: 'Reference', value: <span className="mono">{app.reference}</span> },
-                  { label: 'Type', value: type?.name ?? '—' },
-                  { label: 'Applicant', value: `${app.applicant_name} (${app.applicant_code})` },
-                  { label: 'Organisation', value: applicationOrgText(data, app) },
-                  { label: 'Current status', value: <StatusChip status={app.status} /> },
-                  { label: 'Current stage post', value: postName(data, app.current_post) },
-                  { label: 'Workflow version', value: workflow ? `v${workflow.version}` : '—' },
-                  { label: 'Submitted', value: formatDateTime(app.submitted_at) },
-                  { label: 'Last update', value: `${formatDateTime(app.updated_at)} (${fromNow(app.updated_at)})` },
-                  { label: 'Retention category', value: humanise(app.retention_category) },
-                ]}
-              />
+              <StageStepper steps={steps} />
+              {workflow?.beyond_final && app.status === 'under_review' ? (
+                <p className="cell-sub" style={{ marginTop: 14 }}>
+                  <Icon.Info size={12} /> The last stage forwards to {workflow.beyond_final.label}. Forwarding is not a
+                  final approval.
+                </p>
+              ) : null}
             </div>
           </Card>
 
@@ -293,28 +308,39 @@ export function ApplicationDetailPage({ appId }: { appId: string }) {
               ) : (
                 <div className="stack sm">
                   {actions.map((a) => (
-                    <div key={a.id} style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '10px 12px' }}>
-                      <div className="row" style={{ justifyContent: 'space-between', gap: 8 }}>
-                        <strong style={{ fontSize: '0.86rem' }}>{humanise(a.action)}</strong>
-                        <span className="cell-sub">{formatDateTime(a.created_at)}</span>
-                      </div>
-                      <div className="cell-sub" style={{ marginTop: 2 }}>
-                        {a.actor_name} ({a.actor_code}){a.post_name ? ` · ${a.post_name}` : ''}
-                        {a.scope_label ? ` · ${a.scope_label}` : ''}
-                        {a.from_status && a.from_status !== a.to_status ? ` · ${STATUS_LABEL[a.from_status as AppStatus] ?? a.from_status} → ${STATUS_LABEL[a.to_status] ?? a.to_status}` : ''}
-                      </div>
-                      {a.remarks_applicant ? (
-                        <div className="t-note" style={{ marginTop: 6 }}>
-                          <strong style={{ fontSize: '0.76rem', color: 'var(--muted)' }}>Visible to applicant: </strong>
-                          {a.remarks_applicant}
+                    <div key={a.id} className="decision">
+                      <span className="avatar sm" aria-hidden="true">{initialLetters(a.actor_name)}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="row" style={{ justifyContent: 'space-between', gap: 8 }}>
+                          <span className="row tight">
+                            <Chip tone={a.action === 'reject' ? 'danger' : a.action === 'return' ? 'warn' : a.action === 'finalise' || a.action === 'approve' ? 'success' : 'neutral'}>
+                              {humanise(a.action)}
+                            </Chip>
+                            {a.from_status && a.from_status !== a.to_status ? (
+                              <span className="cell-sub">
+                                {STATUS_LABEL[a.from_status as AppStatus] ?? a.from_status} → {STATUS_LABEL[a.to_status] ?? a.to_status}
+                              </span>
+                            ) : null}
+                          </span>
+                          <span className="cell-sub">{formatDateTime(a.created_at)}</span>
                         </div>
-                      ) : null}
-                      {a.remarks_internal ? (
-                        <div className="t-note" style={{ marginTop: 6, background: '#fffbf0', borderColor: '#f0e0b8' }}>
-                          <strong style={{ fontSize: '0.76rem', color: 'var(--warn)' }}>Internal note: </strong>
-                          {a.remarks_internal}
+                        <div className="cell-sub" style={{ marginTop: 4 }}>
+                          {a.actor_name} ({a.actor_code}){a.post_name ? ` · ${a.post_name}` : ''}
+                          {a.scope_label ? ` · ${a.scope_label}` : ''}
                         </div>
-                      ) : null}
+                        {a.remarks_applicant ? (
+                          <div className="note note-applicant">
+                            <strong>Visible to applicant</strong>
+                            {a.remarks_applicant}
+                          </div>
+                        ) : null}
+                        {a.remarks_internal ? (
+                          <div className="note note-internal">
+                            <strong><Icon.Lock size={11} /> Internal note</strong>
+                            {a.remarks_internal}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -368,13 +394,17 @@ export function ApplicationDetailPage({ appId }: { appId: string }) {
 
           {isApplicant ? (
             <Card>
-              <CardHeader title="Applicant view" />
-              <div className="card-pad stack sm" style={{ fontSize: '0.86rem' }}>
-                <p style={{ color: 'var(--muted)' }}>
-                  You always see your own application, but never internal officer notes or other applicants’ records.
-                </p>
-                {app.status === 'returned' ? <Alert tone="warn" title="Action needed."> Review the remarks and resubmit with corrections.</Alert> : null}
-                {app.status === 'draft' ? <Alert tone="info">This is still a draft. It has not been sent to any officer.</Alert> : null}
+              <CardHeader title="Your access" />
+              <div className="card-pad stack sm" style={{ fontSize: '0.84rem' }}>
+                <div className="row" style={{ gap: 8, color: 'var(--muted)' }}>
+                  <Icon.CheckCircle size={14} /> You can always open your own application
+                </div>
+                <div className="row" style={{ gap: 8, color: 'var(--muted)' }}>
+                  <Icon.Lock size={14} /> Internal officer notes stay hidden from you
+                </div>
+                <div className="row" style={{ gap: 8, color: 'var(--muted)' }}>
+                  <Icon.Users size={14} /> Other applicants’ records are never shown
+                </div>
                 {app.status === 'draft' ? (
                   <Button variant="danger" size="small" onClick={() => {
                     if (!window.confirm('Delete this draft permanently?')) return;
@@ -392,60 +422,6 @@ export function ApplicationDetailPage({ appId }: { appId: string }) {
               </div>
             </Card>
           ) : null}
-
-          <Card>
-            <CardHeader title="Approval route" subtitle={workflow ? `Workflow version ${workflow.version}` : 'Unavailable'} />
-            <div className="card-pad">
-              {!workflow ? (
-                <p className="cell-sub">The workflow version used by this application is unavailable.</p>
-              ) : (
-                <ol style={{ margin: 0, paddingLeft: 0, listStyle: 'none' }} className="stack sm">
-                  {workflow.stages.map((stage, index) => {
-                    const reached = app.post_codes_seen.includes(stage.post_code);
-                    const current = app.stage_index === index && app.current_post === stage.post_code && !['completed', 'rejected', 'withdrawn'].includes(app.status);
-                    const done = reached && !current && app.post_codes_seen.indexOf(stage.post_code) >= 0 && index < app.stage_index;
-                    return (
-                      <li key={stage.key} className="row" style={{ gap: 10 }}>
-                        <span
-                          className="avatar sm"
-                          style={{
-                            background: current ? 'var(--blue-50)' : done ? 'var(--success-bg)' : '#f1f4f9',
-                            color: current ? 'var(--blue)' : done ? 'var(--success)' : 'var(--muted)',
-                          }}
-                          aria-hidden="true"
-                        >
-                          {done ? <Icon.Check size={14} /> : index + 1}
-                        </span>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '0.86rem', fontWeight: 600 }}>{stage.label || postName(data, stage.post_code)}</div>
-                          <div className="cell-sub">
-                            {postName(data, stage.post_code)}
-                            {current ? ' · awaiting decision' : done ? ' · completed' : ' · pending'}
-                          </div>
-                        </div>
-                        {current ? <Chip tone="info">Current</Chip> : null}
-                      </li>
-                    );
-                  })}
-                  {workflow.beyond_final ? (
-                    <li className="row" style={{ gap: 10 }}>
-                      <span className="avatar sm" style={{ background: app.beyond_active ? 'var(--warn-bg)' : '#f1f4f9', color: app.beyond_active ? 'var(--warn)' : 'var(--muted)' }} aria-hidden="true">
-                        <Icon.Shield size={14} />
-                      </span>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.86rem', fontWeight: 600 }}>{workflow.beyond_final.label}</div>
-                        <div className="cell-sub">
-                          Beyond the final authority · {postName(data, workflow.beyond_final.post_code)}
-                          {app.beyond_active ? ' · awaiting decision' : app.beyond_done ? ' · completed' : ' · not reached'}
-                        </div>
-                      </div>
-                      {app.beyond_active ? <Chip tone="warn">Current</Chip> : null}
-                    </li>
-                  ) : null}
-                </ol>
-              )}
-            </div>
-          </Card>
 
           <Card>
             <CardHeader title="Documents & privacy" />
@@ -760,4 +736,13 @@ function WithdrawModal({ onClose, onSubmit }: { onClose: () => void; onSubmit: (
 
 export function ActionBadge({ action }: { action: ActionType }) {
   return <Chip tone="neutral">{humanise(action)}</Chip>;
+}
+
+function Fact({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="fact">
+      <span className="fact-label">{label}</span>
+      <span className="fact-value">{value}</span>
+    </div>
+  );
 }

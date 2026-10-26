@@ -28,6 +28,13 @@ export function ProfilePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isStudent = profile.kind === 'student';
+  const [username, setUsername] = useState(profile.email);
+  const [usernamePassword, setUsernamePassword] = useState('');
+  const [savingUsername, setSavingUsername] = useState(false);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [usernameDone, setUsernameDone] = useState(false);
+
   const dept = data.departments.find((d) => d.id === (profile.kind === 'student' ? profile.department_id : profile.home_department_id));
   const batch = data.batches.find((b) => b.id === profile.batch_id);
   const section = data.sections.find((s) => s.id === profile.section_id);
@@ -36,6 +43,12 @@ export function ProfilePage() {
     .sort((a, b) => (a.starts_at < b.starts_at ? 1 : -1));
 
   const activeGrants = current.grants;
+  const mentorAssignment = data.assignments.find(
+    (a) => a.active && a.post_code === 'MENTOR' && a.scope.section_id === profile.section_id,
+  );
+  const mentorName = mentorAssignment
+    ? data.profiles.find((p) => p.id === mentorAssignment.user_id)?.full_name ?? null
+    : null;
 
   async function changePassword(e: React.FormEvent) {
     e.preventDefault();
@@ -58,6 +71,23 @@ export function ProfilePage() {
     }
   }
 
+  async function changeUsername(e: React.FormEvent) {
+    e.preventDefault();
+    setUsernameError(null);
+    setUsernameDone(false);
+    setSavingUsername(true);
+    try {
+      await backend.changeUsername(username, usernamePassword);
+      setUsernamePassword('');
+      setUsernameDone(true);
+      notify('Username updated. Use it the next time you sign in.', 'success');
+    } catch (err) {
+      setUsernameError(errorMessage(err));
+    } finally {
+      setSavingUsername(false);
+    }
+  }
+
   return (
     <>
       <PageHeader
@@ -70,7 +100,14 @@ export function ProfilePage() {
       <div className="grid cols-2" style={{ alignItems: 'start' }}>
         <div className="stack">
           <Card>
-            <CardHeader title="Personal details" subtitle="Managed by the university administrator — contact them to correct these." />
+            <CardHeader
+              title="Personal details"
+              subtitle={
+                isStudent
+                  ? 'These are managed by the university administrator and cannot be changed from this page. You can change only your username and password.'
+                  : 'These are managed by the university administrator — contact them to correct these.'
+              }
+            />
             <div className="card-pad">
               <Descriptions
                 items={[
@@ -98,19 +135,7 @@ export function ProfilePage() {
                         { label: 'Batch', value: batch?.label ?? '—' },
                         { label: 'Section', value: section?.name ?? '—' },
                         { label: 'Roll number', value: profile.roll_no ?? '—' },
-                        {
-                          label: 'Current mentor',
-                          value:
-                            data.assignments.find((a) => a.active && a.post_code === 'MENTOR' && a.scope.section_id === profile.section_id)
-                              ? data.profiles.find(
-                                  (p) =>
-                                    p.id ===
-                                    data.assignments.find(
-                                      (a) => a.active && a.post_code === 'MENTOR' && a.scope.section_id === profile.section_id,
-                                    )?.user_id,
-                                )?.full_name ?? '—'
-                              : 'Not assigned',
-                        },
+                        ...(mentorName ? [{ label: 'Current mentor', value: mentorName }] : []),
                       ]
                     : [
                         { label: 'Department', value: dept?.name ?? '—' },
@@ -196,6 +221,67 @@ export function ProfilePage() {
                   post’s application history. Other independent assignments keep working.
                 </Alert>
               </div>
+            </div>
+          </Card>
+
+          <Card>
+            <CardHeader
+              title="Sign-in details"
+              subtitle={
+                isStudent
+                  ? 'Change the username (email address) you sign in with. Your name, course, batch and section stay locked.'
+                  : 'Your username is managed by the administrator. You can still change your password below.'
+              }
+            />
+            <div className="card-pad">
+              {profile.kind === 'student' ? (
+                <>
+                  {usernameError ? <div style={{ marginBottom: 12 }}><Alert tone="danger">{usernameError}</Alert></div> : null}
+                  {usernameDone ? (
+                    <div style={{ marginBottom: 12 }}>
+                      <Alert tone="success">Username changed. Sign in with your new username from now on.</Alert>
+                    </div>
+                  ) : null}
+                  <form onSubmit={changeUsername} noValidate>
+                    <Field
+                      label="Username (email address)"
+                      htmlFor="profile-username"
+                      hint="Must be unique in the university. Letters, numbers, dots and @ are allowed."
+                    >
+                      <TextInput
+                        id="profile-username"
+                        type="email"
+                        autoComplete="username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Current password" htmlFor="username-password" hint="Confirms it is really you.">
+                      <TextInput
+                        id="username-password"
+                        type="password"
+                        autoComplete="current-password"
+                        value={usernamePassword}
+                        onChange={(e) => setUsernamePassword(e.target.value)}
+                      />
+                    </Field>
+                    <Button
+                      type="submit"
+                      loading={savingUsername}
+                      disabled={!usernamePassword || !username || username.trim().toLowerCase() === profile.email}
+                    >
+                      <Icon.Check size={15} /> Update username
+                    </Button>
+                  </form>
+                </>
+              ) : (
+                <Descriptions
+                  items={[
+                    { label: 'Username', value: <span className="mono">{profile.email}</span> },
+                    { label: 'Managed by', value: 'University administrator' },
+                  ]}
+                />
+              )}
             </div>
           </Card>
 

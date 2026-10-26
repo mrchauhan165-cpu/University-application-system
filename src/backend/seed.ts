@@ -146,8 +146,8 @@ function posts(): Post[] {
 }
 
 const settings = (): Settings => ({
-  university_name: 'Demo State University',
-  university_short: 'DSU',
+  university_name: 'SGT University',
+  university_short: 'SGTU',
   support_email: 'support@demo.university',
   timezone: 'Asia/Kolkata',
   seed_data: true,
@@ -165,14 +165,96 @@ function org(): {
   now: string;
 } {
   const now = new Date().toISOString();
+  // SGT University's 19 faculties/schools. These are seed defaults only — every
+  // one of them (plus their departments) can be renamed, added to or archived from
+  // Administration → Organisation, and no application logic depends on the list.
   const faculties: Faculty[] = [
-    { id: 'fac_eng', name: 'Faculty of Engineering', code: 'ENG', active: true, archived: false },
-    { id: 'fac_sci', name: 'Faculty of Science', code: 'SCI', active: true, archived: false },
+    { id: 'fac_med', name: 'Faculty of Medicine & Health Sciences', code: 'MED', active: true, archived: false },
+    { id: 'fac_dent', name: 'Faculty of Dental Sciences', code: 'DENT', active: true, archived: false },
+    { id: 'fac_ayur', name: 'Faculty of Indian Medical System (Ayurveda)', code: 'AYUR', active: true, archived: false },
+    { id: 'fac_nurs', name: 'Faculty of Nursing', code: 'NURS', active: true, archived: false },
+    { id: 'fac_pharm', name: 'Faculty of Pharmacy', code: 'PHARM', active: true, archived: false },
+    { id: 'fac_ahs', name: 'Faculty of Allied Health Sciences', code: 'AHS', active: true, archived: false },
+    { id: 'fac_physio', name: 'Faculty of Physiotherapy', code: 'PHYSIO', active: true, archived: false },
+    { id: 'fac_naturo', name: 'Faculty of Naturopathy & Yogic Sciences', code: 'NATURO', active: true, archived: false },
+    { id: 'fac_behav', name: 'Faculty of Behavioural Sciences', code: 'BEHAV', active: true, archived: false },
+    { id: 'fac_agri', name: 'Faculty of Agricultural Sciences', code: 'AGRI', active: true, archived: false },
+    { id: 'fac_sci', name: 'Faculty of Basic & Applied Sciences', code: 'BAS', active: true, archived: false },
+    { id: 'fac_eng', name: 'Faculty of Engineering & Technology', code: 'ENG', active: true, archived: false },
+    { id: 'fac_com', name: 'School of Commerce & Management', code: 'COM', active: true, archived: false },
+    { id: 'fac_law', name: 'Faculty of Law', code: 'LAW', active: true, archived: false },
+    { id: 'fac_edu', name: 'Faculty of Education', code: 'EDU', active: true, archived: false },
+    { id: 'fac_design', name: 'School of Design', code: 'DESIGN', active: true, archived: false },
+    { id: 'fac_htm', name: 'School of Hotel & Tourism Management', code: 'HTM', active: true, archived: false },
+    { id: 'fac_emc', name: 'School of Emerging Media, Communication & Film Studies', code: 'EMC', active: true, archived: false },
+    { id: 'fac_hum', name: 'School of Humanities, Social Sciences & Liberal Arts', code: 'HUM', active: true, archived: false },
   ];
+
   const departments: Department[] = [
+    // Engineering & Technology
     { id: 'dep_cse', faculty_id: 'fac_eng', name: 'Computer Science & Engineering', code: 'CSE', active: true, archived: false },
     { id: 'dep_ece', faculty_id: 'fac_eng', name: 'Electronics & Communication', code: 'ECE', active: true, archived: false },
+    { id: 'dep_mech', faculty_id: 'fac_eng', name: 'Mechanical Engineering', code: 'ME', active: true, archived: false },
+    { id: 'dep_civil', faculty_id: 'fac_eng', name: 'Civil Engineering', code: 'CE', active: true, archived: false },
+    // Basic & Applied Sciences
     { id: 'dep_phy', faculty_id: 'fac_sci', name: 'Physics', code: 'PHY', active: true, archived: false },
+    { id: 'dep_chem', faculty_id: 'fac_sci', name: 'Chemistry', code: 'CHEM', active: true, archived: false },
+    { id: 'dep_math', faculty_id: 'fac_sci', name: 'Mathematics', code: 'MATH', active: true, archived: false },
+    { id: 'dep_forensic', faculty_id: 'fac_sci', name: 'Forensic Science', code: 'FOR', active: true, archived: false },
+    // Medicine & Health Sciences
+    { id: 'dep_gmed', faculty_id: 'fac_med', name: 'General Medicine', code: 'GMED', active: true, archived: false },
+    { id: 'dep_surg', faculty_id: 'fac_med', name: 'General Surgery', code: 'SURG', active: true, archived: false },
+    { id: 'dep_paed', faculty_id: 'fac_med', name: 'Paediatrics', code: 'PAED', active: true, archived: false },
+    // Dental Sciences
+    { id: 'dep_cons', faculty_id: 'fac_dent', name: 'Conservative Dentistry & Endodontics', code: 'CONS', active: true, archived: false },
+    { id: 'dep_oms', faculty_id: 'fac_dent', name: 'Oral & Maxillofacial Surgery', code: 'OMS', active: true, archived: false },
+    // Ayurveda
+    { id: 'dep_ayur_samhita', faculty_id: 'fac_ayur', name: 'Ayurveda Samhita', code: 'ASAM', active: true, archived: false },
+    { id: 'dep_shalya', faculty_id: 'fac_ayur', name: 'Shalya Tantra', code: 'SHAL', active: true, archived: false },
+    // Nursing
+    { id: 'dep_nurs', faculty_id: 'fac_nurs', name: 'Nursing', code: 'NUR', active: true, archived: false },
+    { id: 'dep_comm_nurs', faculty_id: 'fac_nurs', name: 'Community Health Nursing', code: 'CHN', active: true, archived: false },
+    // Pharmacy
+    { id: 'dep_pharm', faculty_id: 'fac_pharm', name: 'Pharmaceutics', code: 'PHM', active: true, archived: false },
+    { id: 'dep_pharm_prac', faculty_id: 'fac_pharm', name: 'Pharmacy Practice', code: 'PHR', active: true, archived: false },
+    // Allied Health Sciences
+    { id: 'dep_mlt', faculty_id: 'fac_ahs', name: 'Medical Laboratory Technology', code: 'MLT', active: true, archived: false },
+    { id: 'dep_optom', faculty_id: 'fac_ahs', name: 'Optometry', code: 'OPTO', active: true, archived: false },
+    { id: 'dep_rad', faculty_id: 'fac_ahs', name: 'Radio-Imaging Technology', code: 'RAD', active: true, archived: false },
+    // Physiotherapy
+    { id: 'dep_physio', faculty_id: 'fac_physio', name: 'Physiotherapy', code: 'PHT', active: true, archived: false },
+    { id: 'dep_sports', faculty_id: 'fac_physio', name: 'Sports & Exercise Sciences', code: 'SES', active: true, archived: false },
+    // Naturopathy & Yogic Sciences
+    { id: 'dep_naturo', faculty_id: 'fac_naturo', name: 'Naturopathy', code: 'NAT', active: true, archived: false },
+    { id: 'dep_yoga', faculty_id: 'fac_naturo', name: 'Yogic Sciences', code: 'YOG', active: true, archived: false },
+    // Behavioural Sciences
+    { id: 'dep_psych', faculty_id: 'fac_behav', name: 'Psychology', code: 'PSY', active: true, archived: false },
+    { id: 'dep_couns', faculty_id: 'fac_behav', name: 'Counselling', code: 'CNS', active: true, archived: false },
+    // Agricultural Sciences
+    { id: 'dep_agron', faculty_id: 'fac_agri', name: 'Agronomy', code: 'AGR', active: true, archived: false },
+    { id: 'dep_plant', faculty_id: 'fac_agri', name: 'Plant Pathology', code: 'PLP', active: true, archived: false },
+    // Commerce & Management
+    { id: 'dep_mgmt', faculty_id: 'fac_com', name: 'Management', code: 'MGT', active: true, archived: false },
+    { id: 'dep_comm', faculty_id: 'fac_com', name: 'Commerce', code: 'COM', active: true, archived: false },
+    // Law
+    { id: 'dep_law', faculty_id: 'fac_law', name: 'Law', code: 'LAW', active: true, archived: false },
+    { id: 'dep_legal', faculty_id: 'fac_law', name: 'Legal Studies', code: 'LEG', active: true, archived: false },
+    // Education
+    { id: 'dep_edu', faculty_id: 'fac_edu', name: 'Education', code: 'EDU', active: true, archived: false },
+    { id: 'dep_spl_edu', faculty_id: 'fac_edu', name: 'Special Education', code: 'SPL', active: true, archived: false },
+    // Design
+    { id: 'dep_fashion', faculty_id: 'fac_design', name: 'Fashion Design', code: 'FD', active: true, archived: false },
+    { id: 'dep_comm_design', faculty_id: 'fac_design', name: 'Communication Design', code: 'CD', active: true, archived: false },
+    // Hotel & Tourism
+    { id: 'dep_hotel', faculty_id: 'fac_htm', name: 'Hotel Management', code: 'HM', active: true, archived: false },
+    { id: 'dep_tourism', faculty_id: 'fac_htm', name: 'Tourism', code: 'TUR', active: true, archived: false },
+    // Emerging Media
+    { id: 'dep_jmc', faculty_id: 'fac_emc', name: 'Journalism & Mass Communication', code: 'JMC', active: true, archived: false },
+    { id: 'dep_film', faculty_id: 'fac_emc', name: 'Film Studies', code: 'FILM', active: true, archived: false },
+    // Humanities
+    { id: 'dep_english', faculty_id: 'fac_hum', name: 'English', code: 'ENG', active: true, archived: false },
+    { id: 'dep_polsci', faculty_id: 'fac_hum', name: 'Political Science', code: 'POL', active: true, archived: false },
+    { id: 'dep_liberal', faculty_id: 'fac_hum', name: 'Liberal Arts', code: 'LAR', active: true, archived: false },
   ];
   const batches: Batch[] = [
     {
@@ -291,26 +373,26 @@ function people(): Profile[] {
   });
 
   return [
-    staff('usr_sysadmin', 'SYS0001', 'System Administrator', 'sysadmin@demo.university', 'dep_cse', 'System Administrator'),
-    staff('usr_wfadmin', 'ADM0001', 'Workflow Administrator', 'wfadmin@demo.university', 'dep_cse', 'University Administrator'),
-    staff('usr_vc', 'VC0001', 'Prof. A. Vice Chancellor', 'vc@demo.university', 'dep_cse', 'Vice-Chancellor'),
-    staff('usr_pvc', 'PVC0001', 'Prof. B. Pro Vice Chancellor', 'pvc@demo.university', 'dep_cse', 'Pro-Vice-Chancellor'),
-    staff('usr_chancellor', 'CHN0001', 'Dr. C. Chancellor', 'chancellor@demo.university', 'dep_cse', 'Chancellor'),
-    staff('usr_registrar', 'REG0001', 'Ms. D. Registrar', 'registrar@demo.university', 'dep_cse', 'Registrar'),
-    staff('usr_dean_eng', 'DEAN0001', 'Prof. E. Dean Engineering', 'dean.eng@demo.university', 'dep_cse', 'Dean, Faculty of Engineering'),
-    staff('usr_dean_sci', 'DEAN0002', 'Prof. F. Dean Science', 'dean.sci@demo.university', 'dep_phy', 'Dean, Faculty of Science'),
-    staff('usr_hod_cse', 'HOD0001', 'Dr. G. Head CSE', 'hod.cse@demo.university', 'dep_cse', 'Head, CSE'),
-    staff('usr_hod_ece', 'HOD0002', 'Dr. H. Head ECE', 'hod.ece@demo.university', 'dep_ece', 'Head, ECE'),
-    staff('usr_mentor_a', 'FAC0001', 'Dr. I. Mentor Section A', 'mentor.a@demo.university', 'dep_cse', 'Assistant Professor & Mentor'),
-    staff('usr_mentor_b', 'FAC0002', 'Dr. J. Mentor Section B', 'mentor.b@demo.university', 'dep_cse', 'Assistant Professor & Mentor'),
-    staff('usr_mentor_ece', 'FAC0003', 'Dr. K. Mentor ECE', 'mentor.ece@demo.university', 'dep_ece', 'Assistant Professor & Mentor'),
-    staff('usr_teacher', 'FAC0004', 'Dr. L. Teacher', 'teacher@demo.university', 'dep_cse', 'Associate Professor'),
-    staff('usr_former_hod', 'FAC0005', 'Dr. M. Former HOD', 'former.hod@demo.university', 'dep_cse', 'Professor'),
-    staff('usr_auditor', 'AUD0001', 'Mr. N. Auditor', 'auditor@demo.university', 'dep_cse', 'Compliance Reviewer'),
-    student('usr_student_a', 'STU0001', 'Aarav Student', 'student.a@demo.university', 'dep_cse', 'bat_cse_2024', 'sec_cse24_a', 'CSE/24/A/001'),
-    student('usr_student_b', 'STU0002', 'Bhavna Student', 'student.b@demo.university', 'dep_cse', 'bat_cse_2024', 'sec_cse24_a', 'CSE/24/A/002'),
-    student('usr_student_c', 'STU0003', 'Chirag Student', 'student.c@demo.university', 'dep_cse', 'bat_cse_2024', 'sec_cse24_b', 'CSE/24/B/001'),
-    student('usr_student_ece', 'STU0004', 'Divya Student', 'student.ece@demo.university', 'dep_ece', 'bat_ece_2024', 'sec_ece24_a', 'ECE/24/A/001'),
+    staff('usr_sysadmin', 'SYS0001', 'Rohit Malhotra', 'sysadmin@demo.university', 'dep_cse', 'System Administrator'),
+    staff('usr_wfadmin', 'ADM0001', 'Neha Bansal', 'wfadmin@demo.university', 'dep_cse', 'University Administrator'),
+    staff('usr_vc', 'VC0001', 'Prof. Anjali Deshmukh', 'vc@demo.university', 'dep_cse', 'Vice-Chancellor'),
+    staff('usr_pvc', 'PVC0001', 'Prof. Balraj Nair', 'pvc@demo.university', 'dep_cse', 'Pro-Vice-Chancellor'),
+    staff('usr_chancellor', 'CHN0001', 'Dr. Chandra Rao', 'chancellor@demo.university', 'dep_cse', 'Chancellor'),
+    staff('usr_registrar', 'REG0001', 'Ms. Deepa Iyer', 'registrar@demo.university', 'dep_cse', 'Registrar'),
+    staff('usr_dean_eng', 'DEAN0001', 'Prof. Eshan Kapoor', 'dean.eng@demo.university', 'dep_cse', 'Dean, Engineering & Technology'),
+    staff('usr_dean_sci', 'DEAN0002', 'Prof. Farah Siddiqui', 'dean.sci@demo.university', 'dep_phy', 'Dean, Basic & Applied Sciences'),
+    staff('usr_hod_cse', 'HOD0001', 'Dr. Gita Menon', 'hod.cse@demo.university', 'dep_cse', 'Head, CSE'),
+    staff('usr_hod_ece', 'HOD0002', 'Dr. Harish Patel', 'hod.ece@demo.university', 'dep_ece', 'Head, ECE'),
+    staff('usr_mentor_a', 'FAC0001', 'Dr. Ira Sharma', 'mentor.a@demo.university', 'dep_cse', 'Assistant Professor & Mentor'),
+    staff('usr_mentor_b', 'FAC0002', 'Dr. Jatin Verma', 'mentor.b@demo.university', 'dep_cse', 'Assistant Professor & Mentor'),
+    staff('usr_mentor_ece', 'FAC0003', 'Dr. Kavya Reddy', 'mentor.ece@demo.university', 'dep_ece', 'Assistant Professor & Mentor'),
+    staff('usr_teacher', 'FAC0004', 'Dr. Lata Joshi', 'teacher@demo.university', 'dep_cse', 'Associate Professor'),
+    staff('usr_former_hod', 'FAC0005', 'Dr. Manoj Tiwari', 'former.hod@demo.university', 'dep_cse', 'Professor'),
+    staff('usr_auditor', 'AUD0001', 'Mr. Nikhil Menon', 'auditor@demo.university', 'dep_cse', 'Compliance Reviewer'),
+    student('usr_student_a', 'STU0001', 'Aarav Mehta', 'student.a@demo.university', 'dep_cse', 'bat_cse_2024', 'sec_cse24_a', 'CSE/24/A/001'),
+    student('usr_student_b', 'STU0002', 'Bhavna Kulkarni', 'student.b@demo.university', 'dep_cse', 'bat_cse_2024', 'sec_cse24_a', 'CSE/24/A/002'),
+    student('usr_student_c', 'STU0003', 'Chirag Anand', 'student.c@demo.university', 'dep_cse', 'bat_cse_2024', 'sec_cse24_b', 'CSE/24/B/001'),
+    student('usr_student_ece', 'STU0004', 'Divya Rane', 'student.ece@demo.university', 'dep_ece', 'bat_ece_2024', 'sec_ece24_a', 'ECE/24/A/001'),
   ];
 }
 
@@ -373,7 +455,7 @@ function assignments(base: number): Assignment[] {
       ends_at: iso(base, -250),
       active: false,
       ended_by: 'usr_sysadmin',
-      ended_reason: 'Handover to Dr. G. Head CSE (demo data)',
+      ended_reason: 'Handover to Dr. Gita Menon (demo data)',
     },
   ];
 }
