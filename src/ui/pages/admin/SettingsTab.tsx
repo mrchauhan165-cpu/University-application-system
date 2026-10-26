@@ -3,6 +3,7 @@ import { Alert, Button, Card, CardHeader, Field, Modal, TextInput } from '../../
 import { Icon } from '../../components/Icons';
 import { useApp } from '../../context';
 import { errorMessage } from '../../../backend/errors';
+import { cloudConfig, projectHost, probeCurrentBuild, type CloudProbe } from '../../../backend/supabase/client';
 
 export function SettingsTab() {
   const { data, backend, notify } = useApp();
@@ -13,6 +14,20 @@ export function SettingsTab() {
   const [retention, setRetention] = useState(String(data.settings.retention_months));
   const [finalRetention, setFinalRetention] = useState(String(data.settings.final_retention_months));
   const [resetting, setResetting] = useState(false);
+  const cloud = cloudConfig();
+  const [probe, setProbe] = useState<CloudProbe | null>(null);
+  const [probing, setProbing] = useState(false);
+
+  async function testCloud() {
+    setProbing(true);
+    try {
+      setProbe(await probeCurrentBuild());
+    } catch (err) {
+      notify(errorMessage(err), 'error');
+    } finally {
+      setProbing(false);
+    }
+  }
   const [resetText, setResetText] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -122,7 +137,12 @@ export function SettingsTab() {
             <dt>Used</dt>
             <dd>{backend.storageMode === 'browser' ? `${(storageBytes / 1024).toFixed(0)} KB of roughly 4 MB` : '—'}</dd>
             <dt>Cloud database</dt>
-            <dd>Not connected. Schema and row-level-security drafts are in <span className="mono">supabase/migrations</span>.</dd>
+            <dd>
+              {cloud
+                ? `Configured for ${projectHost(cloud.url)} — the adapter is not switching reads/writes over yet.`
+                : 'Not configured in this build. Schema and row-level-security drafts are in '}
+              {cloud ? null : <span className="mono">supabase/migrations</span>}
+            </dd>
           </dl>
           <Alert tone="info" title="Per device, per browser.">
             Signing in from another phone or laptop shows that browser’s own copy of the demo data. Use Export below to
@@ -153,6 +173,63 @@ export function SettingsTab() {
           <p className="cell-sub">
             Exports contain demo personal data and audit history. Never commit an export to a public repository.
           </p>
+        </div>
+      </Card>
+
+      <Card>
+        <CardHeader
+          title="Cloud connection"
+          subtitle="Checks the two publishable build variables without reading any personal data."
+        />
+        <div className="card-pad stack">
+          <dl className="kv">
+            <dt>Build variables</dt>
+            <dd>
+              {cloud ? (
+                <>
+                  <span className="mono">VITE_SUPABASE_URL</span> and <span className="mono">VITE_SUPABASE_ANON_KEY</span> present
+                </>
+              ) : (
+                <>
+                  Not present — add them as repository <strong>Variables</strong> (Settings → Secrets and variables → Actions)
+                  so the Pages build can see them
+                </>
+              )}
+            </dd>
+            <dt>Project</dt>
+            <dd>{cloud ? <span className="mono">{projectHost(cloud.url)}</span> : '—'}</dd>
+            <dt>Data path</dt>
+            <dd>
+              Still local in this build. Reads and writes move to Supabase once the adapter and the write functions land;
+              nothing is copied or sent today.
+            </dd>
+          </dl>
+          <div className="row">
+            <Button variant="secondary" onClick={() => void testCloud()} disabled={probing}>
+              <Icon.Shield size={15} /> {probing ? 'Testing…' : 'Test cloud connection'}
+            </Button>
+            {probe?.host ? <span className="cell-sub">Checked {probe.host}</span> : null}
+          </div>
+          {probe ? (
+            <div className="stack sm">
+              {probe.checks.map((check) => (
+                <div key={check.name} className="row" style={{ alignItems: 'flex-start' }}>
+                  {check.ok ? <Icon.CheckCircle size={16} /> : <Icon.Alert size={16} />}
+                  <div style={{ flex: 1 }}>
+                    <div className="cell-title">{check.name}</div>
+                    <div className="cell-sub">{check.detail}</div>
+                  </div>
+                </div>
+              ))}
+              <Alert tone={probe.ok ? 'success' : 'warn'} title={probe.ok ? 'Connection looks healthy.' : 'Not ready yet.'}>
+                {!probe.configured
+                  ? 'This build has no Supabase variables. The portal keeps working from browser storage.'
+                  : probe.ok
+                    ? 'URL, publishable key and the SQL migrations all answered. The next step is switching the data layer over.'
+                    : 'Fix the failing check above, then test again. The portal keeps working from browser storage either way.'}
+              </Alert>
+            </div>
+          ) : null}
         </div>
       </Card>
 
